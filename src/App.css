@@ -90,12 +90,8 @@ h1 {
 
 /* Upload Sections */
 .upload-sections {
-  /* display: grid;
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem; */
-  display: flex;
-  flex-direction: row;
   gap: 2rem;
   margin-top: 2rem;
 }
@@ -103,8 +99,8 @@ h1 {
 .upload-section {
   display: flex;
   flex-direction: column;
-  max-width: 50%;
   gap: 1.5rem;
+  min-width: 0; /* Allow flex items to shrink */
 }
 
 .section-title {
@@ -416,6 +412,7 @@ h1 {
   margin-right: -2rem;
   padding: 0 2rem;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .data-table {
@@ -425,6 +422,7 @@ h1 {
   font-size: 0.9rem;
   border-radius: 16px;
   overflow: hidden;
+  min-width: 600px; /* Ensure table doesn't get too cramped */
 }
 
 .data-table th {
@@ -593,7 +591,7 @@ h1 {
 
 .results-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 2rem;
 }
 
@@ -658,6 +656,26 @@ h1 {
 }
 
 /* Responsive design */
+@media (max-width: 1024px) {
+  .upload-sections {
+    gap: 1.5rem;
+  }
+  
+  .upload-area {
+    padding: 1.5rem;
+    min-height: 160px;
+  }
+  
+  .data-table {
+    min-width: 500px;
+  }
+  
+  .results-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .app {
     padding: 1rem;
@@ -672,10 +690,10 @@ h1 {
     font-size: 2.25rem;
   }
   
-  /* .upload-sections {
+  .upload-sections {
     grid-template-columns: 1fr;
     gap: 1.5rem;
-  } */
+  }
   
   .upload-area {
     padding: 2rem 1.5rem;
@@ -704,11 +722,13 @@ h1 {
   
   .data-table {
     font-size: 0.8rem;
+    min-width: 400px;
   }
   
   .data-table th,
   .data-table td {
     padding: 0.75rem 0.5rem;
+    min-width: 100px;
   }
   
   .data-container h3 {
@@ -784,5 +804,6 @@ h1 {
   .data-table td {
     padding: 0.5rem 0.25rem;
     font-size: 0.75rem;
+    min-width: 80px;
   }
 }
