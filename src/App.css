@@ -495,6 +495,36 @@ h1 {
   color: #059669 !important;
 }
 
+/* Classification Styling */
+.classified-container {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+}
+
+.classified-container h3 {
+  color: #92400e;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.classification-note {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Remaining container styles no longer used */
+
 /* Bank Reconciliation Section */
 .reconciliation-section {
   margin-top: 3rem;

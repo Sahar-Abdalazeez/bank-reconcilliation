@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import './App.css'
 
@@ -16,6 +16,102 @@ function App() {
   const [bankFileName, setBankFileName] = useState('')
   const [bankError, setBankError] = useState('')
   const [bankLoading, setBankLoading] = useState(false)
+  
+  // Preview limits for large files
+  const PREVIEW_ROW_LIMIT = 500
+  const LOAD_MORE_STEP = 1000
+  const [companyPreviewLimit, setCompanyPreviewLimit] = useState(PREVIEW_ROW_LIMIT)
+  const [bankPreviewLimit, setBankPreviewLimit] = useState(PREVIEW_ROW_LIMIT)
+  
+  // Classification state
+  const [companyClassifiedData, setCompanyClassifiedData] = useState([])
+  const [bankClassifiedData, setBankClassifiedData] = useState([])
+
+  
+  // Checks Collection Reconciliation results
+  const [checksCollectionResults, setChecksCollectionResults] = useState(null)
+
+  // Helpers and classification (defined before use)
+  const getBankNarrativeIndex = useCallback((headers) => {
+    const candidates = ['narrative', 'narritive', 'narr', 'description', 'details']
+    return headers.findIndex(header => {
+      if (!header) return false
+      const h = header.toString().toLowerCase().trim()
+      return candidates.some(key => h.includes(key))
+    })
+  }, [])
+
+  const classifyCompanyData = useCallback((data, headers) => {
+    const البيانIndex = headers.findIndex(header => header === 'البيان')
+    if (البيانIndex === -1) {
+      return { classified: [], remaining: data }
+    }
+
+    const classificationPatterns = [
+      'اعادة ايداع شيك راجع',
+      'ايداع شيكات مقاصة', 
+      'و ذلك عن تحصيل شيك'
+    ]
+
+    const classified = []
+    const remaining = []
+
+    data.forEach(row => {
+      const البيانValue = row[البيانIndex]
+      const shouldClassify = البيانValue && classificationPatterns.some(pattern => 
+        البيانValue.toString().includes(pattern)
+      )
+
+      if (shouldClassify) {
+        classified.push(row)
+      } else {
+        remaining.push(row)
+      }
+    })
+
+    return { classified, remaining }
+  }, [])
+
+  const classifyBankData = useCallback((data, headers) => {
+    const narrativeIndex = getBankNarrativeIndex(headers)
+    if (narrativeIndex === -1) {
+      return { classified: [], remaining: data }
+    }
+
+    const normalizeText = (text) => text.toString().toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim()
+    const classificationPatterns = [
+      'check deposit',
+      'cheque deposit',
+      'clear depo',
+      'clear depo',
+      'clearing deposit',
+      'internal clearing',
+      'int clearing',
+      'internal clearing transfer'
+    ].map(normalizeText)
+    const exactPhrases = ['check deposit', 'clear. depo.', 'internal clearing']
+
+    const classified = []
+    const remaining = []
+
+    data.forEach(row => {
+      const narrativeValue = row[narrativeIndex]
+      const raw = narrativeValue ? narrativeValue.toString().toLowerCase() : ''
+      const text = narrativeValue ? normalizeText(narrativeValue) : ''
+      const containsClearDepo = text.includes('clear') && (text.includes('depo') || text.includes('deposit'))
+      const exactMatch = raw && exactPhrases.some(p => raw.includes(p))
+      const normalizedMatch = text && classificationPatterns.some(pattern => text.includes(pattern))
+      const shouldClassify = exactMatch || normalizedMatch || containsClearDepo
+
+      if (shouldClassify) {
+        classified.push(row)
+      } else {
+        remaining.push(row)
+      }
+    })
+
+    return { classified, remaining }
+  }, [getBankNarrativeIndex])
   
   // Drag over states
   const [companyDragOver, setCompanyDragOver] = useState(false)
@@ -62,10 +158,24 @@ function App() {
         if (isCompany) {
           setCompanyHeaders(headerRow || [])
           setCompanyData(rows)
+          setCompanyPreviewLimit(PREVIEW_ROW_LIMIT)
+          
+          // Classify company data
+          const companyClassification = classifyCompanyData(rows, headerRow || [])
+          setCompanyClassifiedData(companyClassification.classified)
+          // Remaining data not displayed per request
+          
           setCompanyLoading(false)
         } else {
           setBankHeaders(headerRow || [])
           setBankData(rows)
+          setBankPreviewLimit(PREVIEW_ROW_LIMIT)
+          
+          // Classify bank data
+          const bankClassification = classifyBankData(rows, headerRow || [])
+          setBankClassifiedData(bankClassification.classified)
+          // Remaining data not displayed per request
+          
           setBankLoading(false)
         }
       } catch (err) {
@@ -93,7 +203,7 @@ function App() {
     }
     
     reader.readAsArrayBuffer(file)
-  }, [companyLoading, bankLoading])
+  }, [companyLoading, bankLoading, classifyCompanyData, classifyBankData])
 
   const handleDrop = useCallback((e, type) => {
     e.preventDefault()
@@ -155,18 +265,25 @@ function App() {
       setCompanyFileName('')
       setCompanyError('')
       setCompanyLoading(false)
+      setCompanyClassifiedData([])
+      // Remaining data not displayed per request
+      setCompanyPreviewLimit(PREVIEW_ROW_LIMIT)
     } else {
       setBankData([])
       setBankHeaders([])
       setBankFileName('')
       setBankError('')
       setBankLoading(false)
+      setBankClassifiedData([])
+      // Remaining data not displayed per request
+      setBankPreviewLimit(PREVIEW_ROW_LIMIT)
     }
   }
 
   const clearAllData = () => {
     clearData('company')
     clearData('bank')
+    setChecksCollectionResults(null)
   }
 
   // Format date values
@@ -188,7 +305,7 @@ function App() {
   }
 
   // Format company data with proper date formatting
-  const formatCompanyData = (data, headers) => {
+  const formatCompanyData = useCallback((data, headers) => {
     // Check for both possible date column names
     const تاريخIndex = headers.findIndex(header => 
       header === 'التاريخ' || header === 'تاريخ الادخال'
@@ -203,7 +320,7 @@ function App() {
       }
       return newRow
     })
-  }
+  }, [])
 
   // Download data as Excel file
   const downloadAsExcel = (data, headers, filename) => {
@@ -231,8 +348,29 @@ function App() {
     }
   }
 
-  // Extract check numbers from البيان column only for "شيك راجع" entries
-  const extractCheckNumbers = (data, headers) => {
+  // Format bank data: format any column with a header including "date"
+  const formatBankData = useCallback((data, headers) => {
+    if (!headers || headers.length === 0) return data
+    const dateColumnIndexes = headers
+      .map((header, idx) => ({ header, idx }))
+      .filter(h => h.header && h.header.toString().toLowerCase().includes('date'))
+      .map(h => h.idx)
+
+    if (dateColumnIndexes.length === 0) return data
+
+    return data.map(row => {
+      const newRow = [...row]
+      dateColumnIndexes.forEach(i => {
+        if (newRow[i] !== undefined && newRow[i] !== null) {
+          newRow[i] = formatDateValue(newRow[i])
+        }
+      })
+      return newRow
+    })
+  }, [])
+
+  // Extract check numbers from البيان column for all rows
+  const extractCheckNumbers = useCallback((data, headers) => {
     const البيانIndex = headers.findIndex(header => header === 'البيان')
     
     if (البيانIndex === -1) return data
@@ -241,16 +379,15 @@ function App() {
       const البيانValue = row[البيانIndex]
       let checkNumber = ''
 
-      // Only extract check numbers from entries containing "شيك راجع"
-      if (البيانValue && البيانValue.toString().includes('شيك راجع')) {
-        // Extract numbers up to 8 digits, excluding dates (no slashes)
+      if (البيانValue) {
+        // Extract numbers up to 8 digits, excluding those that are part of date-like patterns
         const text = البيانValue.toString()
         const numbers = text.match(/\d{1,8}/g)
-        
+
         if (numbers) {
-          // Find the number that's most likely a check number (8 digits or less, no slashes)
           const validCheckNumber = numbers.find(num => 
-            num.length <= 8 && 
+            num.length <= 8 &&
+            // exclude patterns like 12/3456 or 2025/08 or /123456/
             !text.includes(`${num}/`) && 
             !text.includes(`/${num}`)
           )
@@ -263,134 +400,229 @@ function App() {
       newRow.push(checkNumber)
       return newRow
     })
-  }
+  }, [])
 
-  // Filter bank data for "returned CHEQUE" entries
-  const filterReturnedCheques = (data, headers) => {
-    const narrativeIndex = headers.findIndex(header => 
-      header && header.toString().toLowerCase().includes('narrative')
-    )
+
+  
+
+  
+
+  // Helper function to parse date and check if bank date is within 4 days after company date
+  const isDateMatch = (companyDate, bankDate) => {
+    if (!companyDate || !bankDate) return false
     
-    if (narrativeIndex === -1) return data
-
-    return data.filter(row => {
-      const narrativeValue = row[narrativeIndex]
-      return narrativeValue && narrativeValue.toString().toLowerCase().includes('returned cheque')
-    })
+    try {
+      // Handle different date formats
+      const parseDate = (dateStr) => {
+        if (typeof dateStr === 'number') {
+          // Excel serial date
+          return new Date((dateStr - 25569) * 86400 * 1000)
+        }
+        if (typeof dateStr === 'string') {
+          // Try DD/MM/YYYY format first
+          const parts = dateStr.split('/')
+          if (parts.length === 3) {
+            return new Date(parts[2], parts[1] - 1, parts[0])
+          }
+          // Try other formats
+          return new Date(dateStr)
+        }
+        return new Date(dateStr)
+      }
+      
+      const companyDateObj = parseDate(companyDate)
+      const bankDateObj = parseDate(bankDate)
+      
+      if (isNaN(companyDateObj.getTime()) || isNaN(bankDateObj.getTime())) return false
+      
+      // Check if dates are equal or bank date is 1-4 days after company date
+      const diffTime = bankDateObj.getTime() - companyDateObj.getTime()
+      const diffDays = diffTime / (1000 * 60 * 60 * 24)
+      
+      return diffDays >= 0 && diffDays <= 4
+    } catch {
+      return false
+    }
   }
 
-  // Match company and bank data
-  const matchReturnedCheques = () => {
-    if (companyData.length === 0 || bankData.length === 0) {
+  // Match Checks Collection data (classified company vs classified bank)
+  const matchChecksCollection = () => {
+    if (formattedCompanyClassifiedWithChecks.length === 0 || bankClassifiedDataFormatted.length === 0) {
       return {
         matchedCompany: [],
         unmatchedCompany: [],
         matchedBank: [],
-        unmatchedBank: []
+        unmatchedBank: [],
+        reviewCompany: [],
+        reviewBank: []
       }
     }
 
-    const companyWithChecks = formatCompanyData(extractCheckNumbers(companyData, companyHeaders), [...companyHeaders, 'رقم الشيك المستخرج'])
-    const bankReturnedCheques = filterReturnedCheques(bankData, bankHeaders)
-    
-    const دائنIndex = companyHeaders.findIndex(header => header === 'دائن')
-    const debitIndex = bankHeaders.findIndex(header => 
-      header && header.toString().toLowerCase().includes('debit')
+    // Find column indices
+    const companyDateIndex = companyHeaders.findIndex(header => 
+      header === 'التاريخ' || header === 'تاريخ الادخال'
     )
-    const docNumIndex = bankHeaders.findIndex(header => 
+    const companyCheckIndex = companyHeadersWithChecks.length - 1 // Last column is check number
+    const companyDebitIndex = companyHeaders.findIndex(header => header === 'مدين')
+    
+    const bankPostDateIndex = bankHeaders.findIndex(header => 
+      header && header.toString().toLowerCase().includes('post') && 
+      header.toString().toLowerCase().includes('date')
+    )
+    const bankDocNumIndex = bankHeaders.findIndex(header => 
       header && header.toString().toLowerCase().includes('doc-num')
     )
+    const bankCreditIndex = bankHeaders.findIndex(header => 
+      header && header.toString().toLowerCase().includes('credit')
+    )
 
-    // Debug: Log the column indices and some sample data
-    console.log('Debug Info:')
-    console.log('دائن Index:', دائنIndex)
-    console.log('Debit Index:', debitIndex)
-    console.log('Doc-Num Index:', docNumIndex)
-    console.log('Company headers:', companyHeaders)
-    console.log('Bank headers:', bankHeaders)
-    console.log('Company with checks sample:', companyWithChecks.slice(0, 2))
-    console.log('Bank returned cheques sample:', bankReturnedCheques.slice(0, 2))
+    console.log('Checks Collection Debug:', {
+      companyDateIndex,
+      companyCheckIndex,
+      companyDebitIndex,
+      bankPostDateIndex,
+      bankDocNumIndex,
+      bankCreditIndex
+    })
 
     const matchedCompany = []
     const unmatchedCompany = []
     const matchedBank = []
     const unmatchedBank = []
+    const reviewCompany = []
+    const reviewBank = []
 
-    // Check each company returned cheque
-    companyWithChecks.forEach((companyRow, index) => {
-      const checkNumber = companyRow[companyRow.length - 1] // Last column is extracted check number
-      const creditorAmount = companyRow[دائنIndex] // Use دائن (creditor) amount
+    // Check each classified company transaction
+    formattedCompanyClassifiedWithChecks.forEach((companyRow, index) => {
+      const companyDate = companyRow[companyDateIndex]
+      const companyCheckNumber = companyRow[companyCheckIndex]
+      const companyDebitAmount = companyRow[companyDebitIndex]
       
-      console.log(`Company row ${index}: checkNumber="${checkNumber}", creditorAmount="${creditorAmount}"`)
+      console.log(`Company row ${index}: date="${companyDate}", check="${companyCheckNumber}", debit="${companyDebitAmount}"`)
       
-      if (!checkNumber || !creditorAmount) {
+      if (!companyDate || !companyCheckNumber || !companyDebitAmount) {
         unmatchedCompany.push(companyRow)
         return
       }
 
-      // Find matching bank entry
-      const matchingBank = bankReturnedCheques.find((bankRow, bankIndex) => {
-        const bankDebitAmount = bankRow[debitIndex]
-        const bankDocNum = bankRow[docNumIndex]
+      // Find matching bank entry - check for perfect match first
+      let matchingBank = bankClassifiedDataFormatted.find((bankRow, bankIndex) => {
+        const bankPostDate = bankRow[bankPostDateIndex]
+        const bankDocNum = bankRow[bankDocNumIndex]
+        const bankCreditAmount = bankRow[bankCreditIndex]
         
-        console.log(`  Checking bank row ${bankIndex}: bankDebitAmount="${bankDebitAmount}", bankDocNum="${bankDocNum}"`)
+        console.log(`  Checking bank row ${bankIndex}: postDate="${bankPostDate}", docNum="${bankDocNum}", credit="${bankCreditAmount}"`)
         
-        // Match bank debit with company creditor amount
-        const amountMatch = bankDebitAmount && creditorAmount && 
-               Math.abs(parseFloat(creditorAmount) - parseFloat(bankDebitAmount)) < 0.01
-        const checkMatch = bankDocNum && bankDocNum.toString() === checkNumber
+        // Check all three criteria for perfect match
+        const dateMatch = isDateMatch(companyDate, bankPostDate)
+        const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
+        const amountMatch = bankCreditAmount && companyDebitAmount && 
+               Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
         
-        console.log(`    Amount match: ${amountMatch} (${creditorAmount} vs ${bankDebitAmount}), Check match: ${checkMatch}`)
+        console.log(`    Date match: ${dateMatch}, Check match: ${checkMatch}, Amount match: ${amountMatch}`)
         
-        return amountMatch && checkMatch
+        return dateMatch && checkMatch && amountMatch
       })
 
       if (matchingBank) {
-        console.log(`  ✅ MATCH FOUND for check ${checkNumber}, creditor amount ${creditorAmount}`)
+        console.log(`  ✅ PERFECT MATCH FOUND for check ${companyCheckNumber}`)
         matchedCompany.push(companyRow)
         if (!matchedBank.find(row => row === matchingBank)) {
           matchedBank.push(matchingBank)
         }
       } else {
-        console.log(`  ❌ NO MATCH for check ${checkNumber}, creditor amount ${creditorAmount}`)
-        unmatchedCompany.push(companyRow)
+        // Check for review match (check number + amount match, but date mismatch)
+        const reviewBankMatch = bankClassifiedDataFormatted.find((bankRow) => {
+          const bankPostDate = bankRow[bankPostDateIndex]
+          const bankDocNum = bankRow[bankDocNumIndex]
+          const bankCreditAmount = bankRow[bankCreditIndex]
+          
+          const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
+          const amountMatch = bankCreditAmount && companyDebitAmount && 
+                 Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
+          
+          // Check if dates exist but don't match (outside tolerance)
+          const hasDates = companyDate && bankPostDate
+          const dateMismatch = hasDates && !isDateMatch(companyDate, bankPostDate)
+          
+          return checkMatch && amountMatch && dateMismatch
+        })
+
+        if (reviewBankMatch) {
+          console.log(`  ⚠️ REVIEW MATCH FOUND for check ${companyCheckNumber} (date mismatch)`)
+          reviewCompany.push(companyRow)
+          if (!reviewBank.find(row => row === reviewBankMatch)) {
+            reviewBank.push(reviewBankMatch)
+          }
+        } else {
+          console.log(`  ❌ NO MATCH for check ${companyCheckNumber}`)
+          unmatchedCompany.push(companyRow)
+        }
       }
     })
 
     // Add unmatched bank entries
-    bankReturnedCheques.forEach(bankRow => {
-      if (!matchedBank.find(row => row === bankRow)) {
+    bankClassifiedDataFormatted.forEach(bankRow => {
+      if (!matchedBank.find(row => row === bankRow) && !reviewBank.find(row => row === bankRow)) {
         unmatchedBank.push(bankRow)
       }
     })
 
-    console.log('Final Results:', {
+    console.log('Checks Collection Results:', {
       matchedCompany: matchedCompany.length,
       unmatchedCompany: unmatchedCompany.length,
       matchedBank: matchedBank.length,
-      unmatchedBank: unmatchedBank.length
+      unmatchedBank: unmatchedBank.length,
+      reviewCompany: reviewCompany.length,
+      reviewBank: reviewBank.length
     })
 
     return {
       matchedCompany,
       unmatchedCompany,
       matchedBank,
-      unmatchedBank
+      unmatchedBank,
+      reviewCompany,
+      reviewBank
     }
   }
 
-  // Get reconciliation results
-  const reconciliationResults = matchReturnedCheques()
+
+  // Compute some derived data with memo to avoid heavy recalculations on each render
 
   // Get company data with extracted check numbers and formatted dates
-  const companyDataWithChecks = companyData.length > 0 && companyHeaders.length > 0 
-    ? formatCompanyData(extractCheckNumbers(companyData, companyHeaders), [...companyHeaders, 'رقم الشيك المستخرج'])
-    : []
+  const companyDataWithChecks = useMemo(() => {
+    if (companyData.length > 0 && companyHeaders.length > 0) {
+      return formatCompanyData(
+        extractCheckNumbers(companyData, companyHeaders),
+        [...companyHeaders, 'رقم الشيك المستخرج']
+      )
+    }
+    return []
+  }, [companyData, companyHeaders, extractCheckNumbers, formatCompanyData])
+
+  // Company classified with formatted dates and extracted check numbers column
+  const formattedCompanyClassifiedWithChecks = useMemo(() => {
+    if (companyClassifiedData.length === 0) return []
+    const withChecks = extractCheckNumbers(companyClassifiedData, companyHeaders)
+    return formatCompanyData(withChecks, [...companyHeaders, 'رقم الشيك المستخرج'])
+  }, [companyClassifiedData, companyHeaders, extractCheckNumbers, formatCompanyData])
+
+  // Bank previews and classified with formatted dates
+  const bankDataFormatted = useMemo(() => {
+    if (bankData.length === 0) return []
+    return formatBankData(bankData, bankHeaders)
+  }, [bankData, bankHeaders, formatBankData])
+
+  const bankClassifiedDataFormatted = useMemo(() => {
+    if (bankClassifiedData.length === 0) return []
+    return formatBankData(bankClassifiedData, bankHeaders)
+  }, [bankClassifiedData, bankHeaders, formatBankData])
 
   // Get headers with check number column
-  const companyHeadersWithChecks = companyHeaders.length > 0 
-    ? [...companyHeaders, 'رقم الشيك المستخرج']
-    : []
+  const companyHeadersWithChecks = useMemo(() => {
+    return companyHeaders.length > 0 ? [...companyHeaders, 'رقم الشيك المستخرج'] : []
+  }, [companyHeaders])
 
   return (
     <div className="app">
@@ -492,6 +724,54 @@ function App() {
                 </p>
               </div>
             )}
+
+            {/* Company Classified Data */}
+            {companyClassifiedData.length > 0 && (
+              <div className="data-container classified-container">
+                <div className="table-header">
+                  <h3>🏷️ Classified Company Data ({companyClassifiedData.length} rows)</h3>
+                  <button 
+                    className="download-button"
+                    onClick={() => downloadAsExcel(
+                      formattedCompanyClassifiedWithChecks, 
+                      companyHeadersWithChecks, 
+                      'classified_company_data.xlsx'
+                    )}
+                  >
+                    📥 Download Excel
+                  </button>
+                </div>
+                <p className="classification-note">
+                  Contains rows with: اعادة ايداع شيك راجع, ايداع شيكات مقاصة, و ذلك عن تحصيل شيك
+                </p>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {companyHeadersWithChecks.map((header, index) => (
+                          <th key={index} className={header === 'رقم الشيك المستخرج' ? 'check-number-header' : ''}>
+                            {header || `Column ${index + 1}`}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formattedCompanyClassifiedWithChecks.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {companyHeadersWithChecks.map((header, colIndex) => (
+                            <td key={colIndex} className={header === 'رقم الشيك المستخرج' ? 'check-number-cell' : ''}>
+                              {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Company Remaining Data - hidden per request */}
           </div>
 
           {/* Bank Data Section */}
@@ -560,7 +840,7 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {bankData.map((row, rowIndex) => {
+                      {bankDataFormatted.map((row, rowIndex) => {
                         return (
                         <tr key={rowIndex}>
                           {bankHeaders.map((_, colIndex) => (
@@ -578,69 +858,138 @@ function App() {
                 </p>
               </div>
             )}
+
+            {/* Bank Classified Data */}
+            {bankClassifiedData.length > 0 && (
+              <div className="data-container classified-container">
+                <div className="table-header">
+                  <h3>🏷️ Classified Bank Data ({bankClassifiedData.length} rows)</h3>
+                  <button 
+                    className="download-button"
+                    onClick={() => downloadAsExcel(
+                      bankClassifiedData, 
+                      bankHeaders, 
+                      'classified_bank_data.xlsx'
+                    )}
+                  >
+                    📥 Download Excel
+                  </button>
+                </div>
+                <p className="classification-note">
+                  Contains rows with: CHECK DEPOSIT, CLEAR. DEPO., INTERNAL CLEARING
+                </p>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {bankHeaders.map((header, index) => (
+                          <th key={index}>{header || `Column ${index + 1}`}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bankClassifiedDataFormatted.map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {bankHeaders.map((_, colIndex) => (
+                            <td key={colIndex}>
+                              {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Bank Remaining Data - hidden per request */}
           </div>
         </div>
 
-        {/* Bank Reconciliation Section */}
-        {(companyData.length > 0 || bankData.length > 0) && (
+
+        {/* Checks Collection Reconciliation Section */}
+        {(companyClassifiedData.length > 0 || bankClassifiedData.length > 0) && (
           <div className="reconciliation-section">
-            <h2 className="section-title reconciliation-title">🔄 Bank Reconciliation</h2>
+            <h2 className="section-title reconciliation-title">🔄 Checks Collection Reconciliation</h2>
             
-            {companyData.length > 0 && bankData.length > 0 ? (
-              <div className="reconciliation-content">
+            {companyClassifiedData.length > 0 && bankClassifiedData.length > 0 ? (
+                <div className="reconciliation-content">
+                  {!checksCollectionResults && (
+                    <div className="table-header">
+                      <h4>Run Checks Collection Reconciliation to match classified data.</h4>
+                      <button 
+                        className="download-button run-button"
+                        onClick={() => setChecksCollectionResults(matchChecksCollection())}
+                      >
+                        ▶ Run Checks Collection Reconciliation
+                      </button>
+                    </div>
+                  )}
+                  {checksCollectionResults && (
                 <div className="reconciliation-stats">
                   <div className="stat-card">
-                    <h4>Company Returned Cheques</h4>
-                    <span className="stat-number">{reconciliationResults.matchedCompany.length + reconciliationResults.unmatchedCompany.length}</span>
+                    <h4>Company Classified</h4>
+                    <span className="stat-number">{checksCollectionResults.matchedCompany.length + checksCollectionResults.unmatchedCompany.length}</span>
                   </div>
                   <div className="stat-card">
-                    <h4>Bank Returned Cheques</h4>
-                    <span className="stat-number">{reconciliationResults.matchedBank.length + reconciliationResults.unmatchedBank.length}</span>
+                    <h4>Bank Classified</h4>
+                    <span className="stat-number">{checksCollectionResults.matchedBank.length + checksCollectionResults.unmatchedBank.length}</span>
                   </div>
                   <div className="stat-card">
                     <h4>Matched Transactions</h4>
-                    <span className="stat-number">{reconciliationResults.matchedCompany.length}</span>
+                    <span className="stat-number">{checksCollectionResults.matchedCompany.length}</span>
                   </div>
                   <div className="stat-card">
                     <h4>Unmatched Company</h4>
-                    <span className="stat-number">{reconciliationResults.unmatchedCompany.length}</span>
+                    <span className="stat-number">{checksCollectionResults.unmatchedCompany.length}</span>
                   </div>
                   <div className="stat-card">
                     <h4>Unmatched Bank</h4>
-                    <span className="stat-number">{reconciliationResults.unmatchedBank.length}</span>
+                    <span className="stat-number">{checksCollectionResults.unmatchedBank.length}</span>
+                  </div>
+                  <div className="stat-card">
+                    <h4>⚠️ Review Company</h4>
+                    <span className="stat-number">{checksCollectionResults.reviewCompany.length}</span>
+                  </div>
+                  <div className="stat-card">
+                    <h4>⚠️ Review Bank</h4>
+                    <span className="stat-number">{checksCollectionResults.reviewBank.length}</span>
                   </div>
                 </div>
+                  )}
                 
                 <div className="reconciliation-note">
-                  <p>✅ Check numbers extracted from "شيك راجع" entries in company data.</p>
-                  <p>✅ Bank data filtered for "returned CHEQUE" entries.</p>
-                  <p>✅ Matching completed based on amounts and check numbers.</p>
+                  <p>✅ Perfect Match: Date (±4 days) + Check Number + Amount</p>
+                  <p>⚠️ Review Table: Check Number + Amount match, but date outside tolerance</p>
+                  <p>✅ Company classified data vs Bank classified data</p>
                 </div>
               </div>
             ) : (
               <div className="reconciliation-placeholder">
-                <p>📁 Upload both company and bank data files to start reconciliation</p>
+                <p>📁 Upload and classify both company and bank data files to start checks collection reconciliation</p>
               </div>
             )}
 
-            {/* Results Tables */}
-            {(reconciliationResults.matchedCompany.length > 0 || reconciliationResults.unmatchedCompany.length > 0 || 
-              reconciliationResults.matchedBank.length > 0 || reconciliationResults.unmatchedBank.length > 0) && (
+            {/* Checks Collection Results Tables */}
+            {checksCollectionResults && (checksCollectionResults.matchedCompany.length > 0 || checksCollectionResults.unmatchedCompany.length > 0 || 
+              checksCollectionResults.matchedBank.length > 0 || checksCollectionResults.unmatchedBank.length > 0 ||
+              checksCollectionResults.reviewCompany.length > 0 || checksCollectionResults.reviewBank.length > 0) && (
               <div className="results-tables">
-                <h3>Reconciliation Results</h3>
+                <h3>Checks Collection Reconciliation Results</h3>
                 
                 <div className="results-grid">
                   {/* Matched Company Data */}
-                  {reconciliationResults.matchedCompany.length > 0 && (
+                  {checksCollectionResults.matchedCompany.length > 0 && (
                     <div className="result-table-container">
                       <div className="table-header">
-                        <h4>✅ Matched Company Transactions ({reconciliationResults.matchedCompany.length})</h4>
+                        <h4>✅ Matched Company Transactions ({checksCollectionResults.matchedCompany.length})</h4>
                         <button 
                           className="download-button"
                           onClick={() => downloadAsExcel(
-                            reconciliationResults.matchedCompany, 
+                            checksCollectionResults.matchedCompany, 
                             companyHeadersWithChecks, 
-                            'matched_company_transactions.xlsx'
+                            'matched_company_checks_collection.xlsx'
                           )}
                         >
                           📥 Download Excel
@@ -658,7 +1007,7 @@ function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {reconciliationResults.matchedCompany.map((row, rowIndex) => (
+                            {checksCollectionResults.matchedCompany.slice(0, companyPreviewLimit).map((row, rowIndex) => (
                               <tr key={rowIndex}>
                                 {companyHeadersWithChecks.map((header, colIndex) => (
                                   <td key={colIndex} className={header === 'رقم الشيك المستخرج' ? 'check-number-cell' : ''}>
@@ -670,20 +1019,26 @@ function App() {
                           </tbody>
                         </table>
                       </div>
+                      {checksCollectionResults.matchedCompany.length > companyPreviewLimit && (
+                        <div className="clear-all-container">
+                          <button className="download-button" onClick={() => setCompanyPreviewLimit(prev => prev + LOAD_MORE_STEP)}>Show more</button>
+                          <button className="download-button" onClick={() => setCompanyPreviewLimit(Number.MAX_SAFE_INTEGER)}>Show all</button>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Unmatched Company Data */}
-                  {reconciliationResults.unmatchedCompany.length > 0 && (
+                  {checksCollectionResults.unmatchedCompany.length > 0 && (
                     <div className="result-table-container">
                       <div className="table-header">
-                        <h4>❌ Unmatched Company Transactions ({reconciliationResults.unmatchedCompany.length})</h4>
+                        <h4>❌ Unmatched Company Transactions ({checksCollectionResults.unmatchedCompany.length})</h4>
                         <button 
                           className="download-button"
                           onClick={() => downloadAsExcel(
-                            reconciliationResults.unmatchedCompany, 
+                            checksCollectionResults.unmatchedCompany, 
                             companyHeadersWithChecks, 
-                            'unmatched_company_transactions.xlsx'
+                            'unmatched_company_checks_collection.xlsx'
                           )}
                         >
                           📥 Download Excel
@@ -701,7 +1056,7 @@ function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {reconciliationResults.unmatchedCompany.map((row, rowIndex) => (
+                            {checksCollectionResults.unmatchedCompany.slice(0, companyPreviewLimit).map((row, rowIndex) => (
                               <tr key={rowIndex}>
                                 {companyHeadersWithChecks.map((header, colIndex) => (
                                   <td key={colIndex} className={header === 'رقم الشيك المستخرج' ? 'check-number-cell' : ''}>
@@ -713,20 +1068,26 @@ function App() {
                           </tbody>
                         </table>
                       </div>
+                      {checksCollectionResults.unmatchedCompany.length > companyPreviewLimit && (
+                        <div className="clear-all-container">
+                          <button className="download-button" onClick={() => setCompanyPreviewLimit(prev => prev + LOAD_MORE_STEP)}>Show more</button>
+                          <button className="download-button" onClick={() => setCompanyPreviewLimit(Number.MAX_SAFE_INTEGER)}>Show all</button>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Matched Bank Data */}
-                  {reconciliationResults.matchedBank.length > 0 && (
+                  {checksCollectionResults.matchedBank.length > 0 && (
                     <div className="result-table-container">
                       <div className="table-header">
-                        <h4>✅ Matched Bank Transactions ({reconciliationResults.matchedBank.length})</h4>
+                        <h4>✅ Matched Bank Transactions ({checksCollectionResults.matchedBank.length})</h4>
                         <button 
                           className="download-button"
                           onClick={() => downloadAsExcel(
-                            reconciliationResults.matchedBank, 
+                            checksCollectionResults.matchedBank, 
                             bankHeaders, 
-                            'matched_bank_transactions.xlsx'
+                            'matched_bank_checks_collection.xlsx'
                           )}
                         >
                           📥 Download Excel
@@ -742,7 +1103,7 @@ function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {reconciliationResults.matchedBank.map((row, rowIndex) => (
+                            {checksCollectionResults.matchedBank.slice(0, bankPreviewLimit).map((row, rowIndex) => (
                               <tr key={rowIndex}>
                                 {bankHeaders.map((_, colIndex) => (
                                   <td key={colIndex}>
@@ -754,20 +1115,26 @@ function App() {
                           </tbody>
                         </table>
                       </div>
+                      {checksCollectionResults.matchedBank.length > bankPreviewLimit && (
+                        <div className="clear-all-container">
+                          <button className="download-button" onClick={() => setBankPreviewLimit(prev => prev + LOAD_MORE_STEP)}>Show more</button>
+                          <button className="download-button" onClick={() => setBankPreviewLimit(Number.MAX_SAFE_INTEGER)}>Show all</button>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Unmatched Bank Data */}
-                  {reconciliationResults.unmatchedBank.length > 0 && (
+                  {checksCollectionResults.unmatchedBank.length > 0 && (
                     <div className="result-table-container">
                       <div className="table-header">
-                        <h4>❌ Unmatched Bank Transactions ({reconciliationResults.unmatchedBank.length})</h4>
+                        <h4>❌ Unmatched Bank Transactions ({checksCollectionResults.unmatchedBank.length})</h4>
                         <button 
                           className="download-button"
                           onClick={() => downloadAsExcel(
-                            reconciliationResults.unmatchedBank, 
+                            checksCollectionResults.unmatchedBank, 
                             bankHeaders, 
-                            'unmatched_bank_transactions.xlsx'
+                            'unmatched_bank_checks_collection.xlsx'
                           )}
                         >
                           📥 Download Excel
@@ -783,7 +1150,7 @@ function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {reconciliationResults.unmatchedBank.map((row, rowIndex) => (
+                            {checksCollectionResults.unmatchedBank.slice(0, bankPreviewLimit).map((row, rowIndex) => (
                               <tr key={rowIndex}>
                                 {bankHeaders.map((_, colIndex) => (
                                   <td key={colIndex}>
@@ -795,6 +1162,108 @@ function App() {
                           </tbody>
                         </table>
                       </div>
+                      {checksCollectionResults.unmatchedBank.length > bankPreviewLimit && (
+                        <div className="clear-all-container">
+                          <button className="download-button" onClick={() => setBankPreviewLimit(prev => prev + LOAD_MORE_STEP)}>Show more</button>
+                          <button className="download-button" onClick={() => setBankPreviewLimit(Number.MAX_SAFE_INTEGER)}>Show all</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Review Company Data */}
+                  {checksCollectionResults.reviewCompany.length > 0 && (
+                    <div className="result-table-container">
+                      <div className="table-header">
+                        <h4>⚠️ Review Company Transactions ({checksCollectionResults.reviewCompany.length})</h4>
+                        <button 
+                          className="download-button"
+                          onClick={() => downloadAsExcel(
+                            checksCollectionResults.reviewCompany, 
+                            companyHeadersWithChecks, 
+                            'review_company_checks_collection.xlsx'
+                          )}
+                        >
+                          📥 Download Excel
+                        </button>
+                      </div>
+                      <div className="table-container">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              {companyHeadersWithChecks.map((header, index) => (
+                                <th key={index} className={header === 'رقم الشيك المستخرج' ? 'check-number-header' : ''}>
+                                  {header || `Column ${index + 1}`}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {checksCollectionResults.reviewCompany.slice(0, companyPreviewLimit).map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {companyHeadersWithChecks.map((header, colIndex) => (
+                                  <td key={colIndex} className={header === 'رقم الشيك المستخرج' ? 'check-number-cell' : ''}>
+                                    {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {checksCollectionResults.reviewCompany.length > companyPreviewLimit && (
+                        <div className="clear-all-container">
+                          <button className="download-button" onClick={() => setCompanyPreviewLimit(prev => prev + LOAD_MORE_STEP)}>Show more</button>
+                          <button className="download-button" onClick={() => setCompanyPreviewLimit(Number.MAX_SAFE_INTEGER)}>Show all</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Review Bank Data */}
+                  {checksCollectionResults.reviewBank.length > 0 && (
+                    <div className="result-table-container">
+                      <div className="table-header">
+                        <h4>⚠️ Review Bank Transactions ({checksCollectionResults.reviewBank.length})</h4>
+                        <button 
+                          className="download-button"
+                          onClick={() => downloadAsExcel(
+                            checksCollectionResults.reviewBank, 
+                            bankHeaders, 
+                            'review_bank_checks_collection.xlsx'
+                          )}
+                        >
+                          📥 Download Excel
+                        </button>
+                      </div>
+                      <div className="table-container">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              {bankHeaders.map((header, index) => (
+                                <th key={index}>{header || `Column ${index + 1}`}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {checksCollectionResults.reviewBank.slice(0, bankPreviewLimit).map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {bankHeaders.map((_, colIndex) => (
+                                  <td key={colIndex}>
+                                    {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {checksCollectionResults.reviewBank.length > bankPreviewLimit && (
+                        <div className="clear-all-container">
+                          <button className="download-button" onClick={() => setBankPreviewLimit(prev => prev + LOAD_MORE_STEP)}>Show more</button>
+                          <button className="download-button" onClick={() => setBankPreviewLimit(Number.MAX_SAFE_INTEGER)}>Show all</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
