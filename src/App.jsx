@@ -1,6 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import './App.css'
+import './header-accordion.css'
+import logoImage from './assets/al-mashreq-logo.png'
 
 function App() {
   // Company data state
@@ -626,9 +628,41 @@ function App() {
 
   return (
     <div className="app">
+      {/* Header */}
+      <header className="app-header">
+        <div className="header-container">
+          <div className="header-content">
+            <div className="logo-section">
+              <img src={logoImage} alt="AL-MASHREQ INSURANCE CO." className="logo-image" />
+              <div className="logo-text">
+                <h1>Bank Reconciliation Assistant</h1>
+                <p>Advanced Excel Data Processing & Reconciliation</p>
+              </div>
+            </div>
+            <nav className="header-nav">
+              <div className="nav-item">
+                <span className="nav-icon">📊</span>
+                <span>Data Processing</span>
+              </div>
+              <div className="nav-item">
+                <span className="nav-icon">🔄</span>
+                <span>Reconciliation</span>
+              </div>
+              <div className="nav-item">
+                <span className="nav-icon">📈</span>
+                <span>Analytics</span>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </header>
+
       <div className="container">
-        <h1>Bank Reconciliation Assistant</h1>
-        <p>Upload company and bank Excel files separately (.xlsx, .xls)</p>
+        <div className="main-content">
+          <div className="content-header">
+            <h2>Upload & Process Your Data</h2>
+            <p>Upload company and bank Excel files separately (.xlsx, .xls) for automated reconciliation</p>
+          </div>
         
         {(companyData.length > 0 || bankData.length > 0) && (
           <div className="clear-all-container">
@@ -694,7 +728,15 @@ function App() {
 
             {companyData.length > 0 && (
               <div className="data-container">
-                <h3>Company Data Preview (with Check Numbers)</h3>
+                <div className="table-header">
+                  <h3>📊 Company Data Preview ({companyData.length} rows)</h3>
+                  <button 
+                    className="download-button"
+                    onClick={() => downloadAsExcel(companyDataWithChecks, companyHeadersWithChecks, 'company_data.xlsx')}
+                  >
+                    📥 Download Excel
+                  </button>
+                </div>
                 <div className="table-container">
                   <table className="data-table">
                     <thead>
@@ -829,7 +871,15 @@ function App() {
 
             {bankData.length > 0 && (
               <div className="data-container">
-                <h3>Bank Data Preview</h3>
+                <div className="table-header">
+                  <h3>🏦 Bank Data Preview ({bankData.length} rows)</h3>
+                  <button 
+                    className="download-button"
+                    onClick={() => downloadAsExcel(bankDataFormatted, bankHeaders, 'bank_data.xlsx')}
+                  >
+                    📥 Download Excel
+                  </button>
+                </div>
                 <div className="table-container">
                   <table className="data-table">
                     <thead>
@@ -1271,6 +1321,7 @@ function App() {
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   )
