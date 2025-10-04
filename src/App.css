@@ -93,8 +93,9 @@ h1 {
 .upload-sections {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: 1rem;
   margin-top: 2rem;
+  padding: 0 1rem;
 }
 
 .upload-section {
@@ -104,11 +105,12 @@ h1 {
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
   margin-bottom: 1rem;
   text-align: center;
   letter-spacing: -0.025em;
+  color: #1e293b;
 }
 
 .company-title {
@@ -121,55 +123,64 @@ h1 {
 
 /* Upload area styles */
 .upload-area {
-  border: 2px dashed #e2e8f0;
-  border-radius: 16px;
-  padding: 1rem 1rem;
+  border: 3px dashed #d1d5db;
+  border-radius: 20px;
+  padding: 2rem 1rem;
   margin: 0;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  min-height: 200px;
+  min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  background: red;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.company-upload {
-  border-color: #0d3f8f;
-  background: linear-gradient(135deg, rgba(13, 63, 143, 0.05) 0%, rgba(13, 63, 143, 0.02) 100%);
+.upload-area::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.02);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
+
+.upload-area:hover::before {
+  opacity: 1;
+}
+
 
 .company-upload:hover {
-  border-color: #0d3f8f;
-  background: linear-gradient(135deg, rgba(13, 63, 143, 0.1) 0%, rgba(13, 63, 143, 0.05) 100%);
-  box-shadow: 0 4px 20px rgba(13, 63, 143, 0.15);
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
 }
 
 .company-upload.drag-over {
-  border-color: #0d3f8f;
-  background: linear-gradient(135deg, rgba(13, 63, 143, 0.15) 0%, rgba(13, 63, 143, 0.1) 100%);
-  box-shadow: 0 6px 25px rgba(13, 63, 143, 0.2);
+  border-color: #059669;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  transform: scale(1.03) translateY(-8px);
+  box-shadow: 0 25px 60px rgba(5, 150, 105, 0.3);
 }
 
 .bank-upload {
-  border-color: #ffd11a;
-  background: linear-gradient(135deg, rgba(255, 209, 26, 0.05) 0%, rgba(255, 209, 26, 0.02) 100%);
+  border-color: #2563eb;
 }
 
 .bank-upload:hover {
-  border-color: #ffd11a;
-  background: linear-gradient(135deg, rgba(255, 209, 26, 0.1) 0%, rgba(255, 209, 26, 0.05) 100%);
-  box-shadow: 0 4px 20px rgba(255, 209, 26, 0.15);
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
 }
 
 .bank-upload.drag-over {
-  border-color: #ffd11a;
-  background: linear-gradient(135deg, rgba(255, 209, 26, 0.15) 0%, rgba(255, 209, 26, 0.1) 100%);
-  box-shadow: 0 6px 25px rgba(255, 209, 26, 0.2);
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  transform: scale(1.03) translateY(-8px);
+  box-shadow: 0 25px 60px rgba(37, 99, 235, 0.3);
 }
 
 .upload-area::before {
@@ -187,8 +198,8 @@ h1 {
 .upload-area:hover {
   border-color: #3b82f6;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.15);
 }
 
 .upload-area:hover::before {
@@ -198,8 +209,10 @@ h1 {
 .upload-area.drag-over {
   border-color: #3b82f6;
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  transform: scale(1.02) translateY(-4px);
-  box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2);
+  transform: scale(1.03) translateY(-8px);
+  box-shadow: 0 25px 60px rgba(59, 130, 246, 0.25);
+  border-style: solid;
+  border-width: 3px;
 }
 
 .upload-area.drag-over::before {
@@ -219,43 +232,57 @@ h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  text-align: center;
 }
 
 .upload-icon {
-  font-size: 4.5rem;
-  margin-bottom: 1rem;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-  transition: transform 0.3s ease;
+  font-size: 5rem;
+  margin-bottom: 0;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+  transition: all 0.3s ease;
+  opacity: 0.7;
 }
 
 .upload-area:hover .upload-icon {
-  transform: scale(1.1);
+  transform: scale(1.15) translateY(-4px);
+  opacity: 1;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.2));
 }
 
 .upload-content h3 {
   color: #1e293b;
-  font-size: 1.625rem;
+  font-size: 1.75rem;
   margin: 0;
   font-weight: 700;
   letter-spacing: -0.025em;
+  transition: color 0.3s ease;
+}
+
+.upload-area:hover .upload-content h3 {
+  color: #3b82f6;
 }
 
 .upload-content p {
   color: #64748b;
   margin: 0;
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.upload-area:hover .upload-content p {
+  color: #475569;
 }
 
 .upload-button {
   color: white;
-  padding: 12px 28px;
+  padding: 16px 36px;
   border-radius: 12px;
   border: none;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -263,16 +290,30 @@ h1 {
   display: inline-block;
   position: relative;
   overflow: hidden;
+  min-width: 180px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .company-button {
-  background: linear-gradient(135deg, #ffd11a 0%, #0d3f8f 100%);
-  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+}
+
+.company-button:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(5, 150, 105, 0.5);
 }
 
 .bank-button {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.bank-button:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5);
 }
 
 .upload-button::before {
@@ -286,15 +327,6 @@ h1 {
   transition: left 0.5s;
 }
 
-.company-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4);
-}
-
-.bank-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
-}
 
 .upload-button:hover::before {
   left: 100%;
@@ -1296,7 +1328,7 @@ h1 {
 .modern-classification-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
   margin-bottom: 2rem;
 }
 
@@ -1304,11 +1336,13 @@ h1 {
   background: white;
   border: 3px solid #f1f5f9;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+    border-color: #1e40af;
+
 }
 
 .modern-classification-card:hover {
@@ -1318,8 +1352,8 @@ h1 {
 }
 
 .modern-classification-card.selected {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-color: #fcba03 ;
+  background: linear-gradient(135deg, #ffdd99 0%, #ffdd99 100%);
   box-shadow: 0 15px 45px rgba(16, 185, 129, 0.2);
 }
 
@@ -1330,23 +1364,33 @@ h1 {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #10b981, #059669);
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .card-icon {
   font-size: 2.5rem;
   opacity: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon img {
+  width:40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .selected-badge {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 20px;
@@ -1415,12 +1459,11 @@ h1 {
 }
 
 .selection-button.active {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
   color: white;
 }
 
 .selection-button.active:hover {
-  background: linear-gradient(135deg, #059669, #047857);
   transform: translateY(-1px);
 }
 
@@ -1773,7 +1816,7 @@ h1 {
   }
   
   .modern-classification-card {
-    padding: 1.5rem;
+    padding: 1rem;
   }
   
   .modern-rules-section {

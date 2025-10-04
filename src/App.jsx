@@ -3,6 +3,11 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import './header-accordion.css'
 import logoImage from './assets/al-mashreq-logo.png'
+import paymentCheckImage from './assets/payment-check.png'
+import returnedCheckImage from './assets/returned-check.png'
+import cashInflowImage from './assets/money.png'
+import visaPaymentImage from './assets/visa.png'
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 
 function App() {
   // Company data state
@@ -27,7 +32,7 @@ function App() {
   const classificationTypes = {
       'checks-collection': {
         name: 'Checks Collection',
-        icon: '🏦',
+        icon: <img src={paymentCheckImage} alt="Returned Checks" width={40} height={40}/>,
         companyPatterns: [
           { pattern: 'اعادة ايداع شيك راجع', matchType: 'startsWith' },
           { pattern: 'ايداع شيكات مقاصة', matchType: 'startsWith' },
@@ -43,7 +48,7 @@ function App() {
       },
     'returned-checks': {
       name: 'Returned Checks',
-      icon: '📊',
+      icon: <img src={returnedCheckImage} alt="Returned Checks"/>,
       companyPatterns: [
         { pattern: 'شيك راجع', matchType: 'startsWith' },
         { pattern: 'ارجاع شيك بعد اعادة ايداعه', matchType: 'includes' },
@@ -58,7 +63,7 @@ function App() {
     },
     'disbursement': {
       name: 'Disbursement',
-      icon: '💼',
+      icon: '💸',
         companyPatterns: [
           { pattern: 'سند صرف', matchType: 'startsWith' },
           { pattern: 'دفعة أدعاء', matchType: 'startsWith' }
@@ -73,7 +78,7 @@ function App() {
     },
     'cash-inflow': {
       name: 'Cash Inflow',
-      icon: '🔍',
+      icon: <img src={cashInflowImage} alt="Cash Inflow" />,
         companyPatterns: [
           { pattern: 'حوالة ', matchType: 'startsWith' },
           { pattern: 'نقل ختم', matchType: 'startsWith' },
@@ -87,6 +92,22 @@ function App() {
       dateTolerance: 3,
       useDateTolerance: true
     },
+    "visa-payment": {
+      name: 'Visa Payment',
+      icon: <img src={visaPaymentImage} alt="Visa Payment" />,
+      companyPatterns: [
+        { pattern: 'ختم بوليصة سيارات', matchType: 'startsWith' },
+        { pattern: '1112111102', matchType: 'startsWith' },
+        { pattern: 'فيزا', matchType: 'startsWith' }
+
+      ],
+      bankPatterns: [
+        { pattern: 'Purchase', matchType: 'startsWith' },
+        { pattern: 'LOAN TRANS', matchType: 'includes' }
+      ],
+      dateTolerance: 3,
+      useDateTolerance: true
+    }
   }
   
   const [companyPreviewLimit, setCompanyPreviewLimit] = useState(PREVIEW_ROW_LIMIT)
@@ -1037,7 +1058,7 @@ function App() {
         <div className="header-container">
           <div className="header-content">
             <div className="logo-section">
-              <img src={logoImage} alt="AL-MASHREQ INSURANCE CO." className="logo-image" />
+              <img src={logoImage} alt="AL-MASHREQ INSURANCE CO." className="logo-image" width={200} height={70} />
               <div className="logo-text">
                 <h1>Bank Reconciliation Assistant</h1>
                 <p>Advanced Excel Data Processing & Reconciliation</p>
@@ -1099,29 +1120,9 @@ function App() {
                         {getClassificationDescription(key)}
                       </p>
                       
-                      <div className="card-stats">
-                        <div className="stat">
-                          <span className="stat-label">🏢 Company Patterns:</span>
-                          <span className="stat-value">{type.companyPatterns.length}</span>
-                        </div>
-                        <div className="stat">
-                          <span className="stat-label">🏦 Bank Patterns:</span>
-                          <span className="stat-value">{type.bankPatterns.length}</span>
-                        </div>
-                      </div>
+                     
                     </div>
                     
-                    <div className="card-footer">
-                      <button 
-                        className={`selection-button ${selectedClassificationType === key ? 'active' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleClassificationTypeChange(key)
-                        }}
-                      >
-                        {selectedClassificationType === key ? '✓ Currently Selected' : 'Select This Type'}
-                      </button>
-                    </div>
                   </div>
                 ))}
               </div>
