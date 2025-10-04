@@ -25,20 +25,22 @@ function App() {
   
   // Classification types configuration
   const classificationTypes = {
-    'checks-collection': {
-      name: 'Checks Collection',
-      icon: '🏦',
-      companyPatterns: [
-        'اعادة ايداع شيك راجع',
-        'ايداع شيكات مقاصة',
-        'و ذلك عن تحصيل شيك'
-      ],
-      bankPatterns: [
-        'CHECK DEPOSIT',
-        'CLEAR. DEPO.',
-        'INTERNAL CLEARING'
-      ]
-    },
+      'checks-collection': {
+        name: 'Checks Collection',
+        icon: '🏦',
+        companyPatterns: [
+          'اعادة ايداع شيك راجع',
+          'ايداع شيكات مقاصة',
+          'و ذلك عن تحصيل شيك'
+        ],
+        bankPatterns: [
+          'CHECK DEPOSIT',
+          'CLEAR. DEPO.',
+          'INTERNAL CLEARING'
+        ],
+        dateTolerance: 4,
+        useDateTolerance: true
+      },
     'returned-checks': {
       name: 'Returned Checks',
       icon: '📊',
@@ -50,7 +52,9 @@ function App() {
         'RETURN CHEQUE , TRANSIT',
         'RETURNED CHECK FROM OTHER BANK',
         'RETURNED POST DATED/INSTALLMENT CHEQUES'
-      ]
+      ],
+      dateTolerance: 4,
+      useDateTolerance: true
     },
     'disbursement': {
       name: 'Disbursement',
@@ -63,36 +67,26 @@ function App() {
         'CLEARING WITHDRAWAL',
         'SWIFT TRANSFER',
         'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT'
-      ]
+      ],
+      dateTolerance: 3,
+      useDateTolerance: true
     },
-    'type-4': {
-      name: 'Type 4 Classification',
+    'cash-inflow': {
+      name: 'Cash Inflow',
       icon: '🔍',
       companyPatterns: [
-        'placeholder pattern 1',
-        'placeholder pattern 2',
-        'placeholder pattern 3'
+        'حوالة ',
+        'نقل ختم',
+        'ايداع نقدي'
       ],
       bankPatterns: [
-        'placeholder pattern A',
-        'placeholder pattern B',
-        'placeholder pattern C'
-      ]
+        'CASH DEPOSIT',
+        'Electronic Transfer',
+        'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT'
+      ],
+      dateTolerance: 3,
+      useDateTolerance: true
     },
-    'type-5': {
-      name: 'Type 5 Classification',
-      icon: '⚡',
-      companyPatterns: [
-        'placeholder pattern 1',
-        'placeholder pattern 2',
-        'placeholder pattern 3'
-      ],
-      bankPatterns: [
-        'placeholder pattern A',
-        'placeholder pattern B',
-        'placeholder pattern C'
-      ]
-    }
   }
   
   const [companyPreviewLimit, setCompanyPreviewLimit] = useState(PREVIEW_ROW_LIMIT)
@@ -127,7 +121,7 @@ function App() {
 
   // Essential column mappings (editable)
   const [essentialMappings, setEssentialMappings] = useState([
-    { id: 'amount', label: '💰 Amount Column', companyColumn: 'مدين', bankColumn: '', icon: '💰' },
+    { id: 'amount', label: '💰 Amount Column', companyColumn: 'دائن', bankColumn: '', icon: '💰' },
     { id: 'check', label: '🧾 Check Column', companyColumn: 'رقم الشيك المستخرج', bankColumn: '', icon: '🧾' },
     { id: 'date', label: '📅 Date Column (Optional)', companyColumn: 'التاريخ', bankColumn: '', icon: '📅', optional: true }
   ])
@@ -208,7 +202,7 @@ function App() {
     data.forEach(row => {
       const classificationValue = row[classificationColumnIndex]
       const shouldClassify = classificationValue && patterns.some(pattern =>
-        classificationValue.toString().includes(pattern)
+        classificationValue.toString().trim().startsWith(pattern)
       )
 
       if (shouldClassify) {
@@ -234,25 +228,27 @@ function App() {
     const patterns = editableRules[classificationType]?.bankPatterns || []
     console.log('📋 Bank patterns:', patterns)
     const normalizeText = (text) => text.toString().toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim()
-    const normalizedPatterns = patterns.map(normalizeText)
-    const exactPhrases = patterns.filter(p => p.includes('.') || p.includes(' '))
 
     const classified = []
     const remaining = []
 
     data.forEach(row => {
       const classificationValue = row[bankClassificationColumnIndex]
-      const raw = classificationValue ? classificationValue.toString().toLowerCase() : ''
-      const text = classificationValue ? normalizeText(classificationValue) : ''
       
-      const exactMatch = raw && exactPhrases.some(p => raw.includes(p.toLowerCase()))
-      const normalizedMatch = text && normalizedPatterns.some(pattern => text.includes(pattern))
-      const shouldClassify = exactMatch || normalizedMatch
+      // Simple pattern matching - check if bank text starts with any pattern
+      const shouldClassify = patterns.some(pattern => {
+        const bankText = classificationValue ? classificationValue.toString().trim() : ''
+        return bankText.toUpperCase().startsWith(pattern.toUpperCase()) || 
+               normalizeText(bankText).startsWith(normalizeText(pattern))
+      })
 
       if (shouldClassify) {
-        console.log(`✅ Bank classified row: "${classificationValue}" matched patterns:`, patterns.filter(p => 
-          raw.includes(p.toLowerCase()) || text.includes(normalizeText(p))
-        ))
+        const matchedPatterns = patterns.filter(pattern => {
+          const bankText = classificationValue ? classificationValue.toString().trim() : ''
+          return bankText.toUpperCase().startsWith(pattern.toUpperCase()) || 
+                 normalizeText(bankText).startsWith(normalizeText(pattern))
+        })
+        console.log(`✅ Bank classified row: "${classificationValue}" matched patterns:`, matchedPatterns)
         classified.push(row)
       } else {
         remaining.push(row)
@@ -280,6 +276,17 @@ function App() {
     // Clear reconciliation results when changing classification type
     setChecksCollectionResults(null)
   }, [companyData, companyHeaders, bankData, bankHeaders, classifyCompanyData, classifyBankData])
+
+  // Helper function to get descriptions for classification types
+  const getClassificationDescription = (key) => {
+    const descriptions = {
+      'returned-checks': 'Identifies returned checks based on specific Arabic patterns in transaction narratives',
+      'disbursement': 'Recognizes disbursement transactions for payments, transfers, and withdrawals',
+      'payment': 'Classifies general payment transactions and settlements',
+      'exchange': 'Identifies currency exchange and foreign exchange operations'
+    }
+    return descriptions[key] || 'Classify transactions based on predefined patterns'
+  }
 
   // Handle rule editing
   const updateRule = useCallback((classificationType, dataType, index, newValue) => {
@@ -627,9 +634,32 @@ function App() {
 
   
 
-  // Helper function to parse date and check if bank date is within 4 days after company date
+  // Helper function to normalize check numbers (pad with leading zeros to 8 digits)
+  const normalizeCheckNumber = useCallback((checkNumber) => {
+    if (!checkNumber) return ''
+    
+    // Convert to string and remove any spaces
+    const cleanNumber = checkNumber.toString().trim()
+    
+    // If empty after cleaning, return empty string
+    if (!cleanNumber) return ''
+    
+    // Pad with leading zeros to make it 8 digits (minimum)
+    const padded = cleanNumber.padStart(8, '0')
+    
+    console.log(`🔢 Check normalization: "${checkNumber}" → "${padded}"`)
+    
+    return padded
+  }, [])
+
+  // Helper function to parse date and check if bank date matches company date with configurable tolerance
   const isDateMatch = useCallback((companyDate, bankDate) => {
     if (!companyDate || !bankDate) return false
+    
+    // Get current classification type settings
+    const currentType = editableRules[selectedClassificationType]
+    const useTolerance = currentType?.useDateTolerance ?? true
+    const toleranceDays = currentType?.dateTolerance ?? 4
     
     try {
       // Handle different date formats
@@ -655,15 +685,84 @@ function App() {
       
       if (isNaN(companyDateObj.getTime()) || isNaN(bankDateObj.getTime())) return false
       
-      // Check if dates are equal or bank date is 1-4 days after company date
+      // If tolerance is disabled, require exact date match (same day)
+      if (!useTolerance) {
+        return companyDateObj.toDateString() === bankDateObj.toDateString()
+      }
+      
+      // Check if dates are equal or bank date is within tolerance days after company date
       const diffTime = bankDateObj.getTime() - companyDateObj.getTime()
       const diffDays = diffTime / (1000 * 60 * 60 * 24)
       
-      return diffDays >= 0 && diffDays <= 4
+      console.log(`📅 Date matching: Company=${companyDate}, Bank=${bankDate}, Tolerance=${toleranceDays} days, diffDays=${diffDays.toFixed(2)}`)
+      
+      return diffDays >= 0 && diffDays <= toleranceDays
     } catch {
       return false
     }
-  }, [])
+  }, [editableRules, selectedClassificationType])
+
+  // Test function for date tolerance (for debugging)
+  const testDateTolerance = useCallback(() => {
+    const currentType = editableRules[selectedClassificationType]
+    const toleranceDays = currentType?.dateTolerance ?? 4
+    const useTolerance = currentType?.useDateTolerance ?? true
+    
+    console.log(`🧪 Testing Date Tolerance for ${currentType?.name || selectedClassificationType}`)
+    console.log(`📊 Settings: useTolerance=${useTolerance}, days=${toleranceDays}`)
+    
+    // Test cases
+    const testCases = [
+      { company: '15/01/2025', bank: '15/01/2025', expected: true, description: 'Same day' },
+      { company: '15/01/2025', bank: '16/01/2025', expected: true, description: 'Next day (+1)' },
+      { company: '15/01/2025', bank: '17/01/2025', expected: true, description: 'Two days (+2)' },
+      { company: '15/01/2025', bank: '19/01/2025', expected: useTolerance ? true : false, description: `Four days (+4)${useTolerance ? ' within tolerance' : ' exact match required'}` },
+      { company: '15/01/2025', bank: '20/01/2025', expected: false, description: 'Five days (+5) outside tolerance' },
+      { company: '15/01/2025', bank: '14/01/2025', expected: false, description: 'Previous day (-1)' },
+    ]
+    
+    testCases.forEach((testCase, index) => {
+      const result = isDateMatch(testCase.company, testCase.bank)
+      const emoji = result === testCase.expected ? '✅' : '❌'
+      console.log(`${emoji} Test ${index + 1}: ${testCase.description} - Company: ${testCase.company}, Bank: ${testCase.bank}, Result: ${result}, Expected: ${testCase.expected}`)
+    })
+  }, [isDateMatch, editableRules, selectedClassificationType])
+
+  // Test function for check number normalization (for debugging)
+  const testCheckNumberNormalization = useCallback(() => {
+    console.log(`🔢 Testing Check Number Normalization`)
+    
+    const testCases = [
+      { original: '1234', description: '4 digits' },
+      { original: '567890', description: '6 digits' },
+      { original: '12345678', description: '8 digits (already normalized)' },
+      { original: '123456789', description: '9 digits (longer than 8)' },
+      { original: '0', description: 'Single zero' },
+      { original: '00', description: 'Double zero' },
+      { original: ' 1234 ', description: 'With spaces' },
+      { original: '', description: 'Empty string' },
+      { original: 'abc123', description: 'With letters' },
+    ]
+    
+    console.log('Test cases for check number normalization:')
+    testCases.forEach((testCase, index) => {
+      const normalized = normalizeCheckNumber(testCase.original)
+      console.log(`${index + 1}. "${testCase.original}" (${testCase.description}) → "${normalized}"`)
+    })
+    
+    // Test matching scenarios
+    console.log('\nMatching scenarios:')
+    const companyChecks = ['1234', '056789', '1234567']
+    const bankChecks = ['00001234', '00567890', '01234567']
+    
+    companyChecks.forEach((companyCheck, index) => {
+      const bankCheck = bankChecks[index]
+      const normalizedCompany = normalizeCheckNumber(companyCheck)
+      const normalizedBank = normalizeCheckNumber(bankCheck)
+      const match = normalizedCompany === normalizedBank
+      console.log(`Company: "${companyCheck}" (${normalizedCompany}) ≈ Bank: "${bankCheck}" (${normalizedBank}) → ${match ? '✅ MATCH' : '❌ NO MATCH'}`)
+    })
+  }, [normalizeCheckNumber])
 
   // Legacy matchChecksCollection function replaced with performAsyncReconciliation for better performance
 
@@ -768,7 +867,9 @@ function App() {
           const bankCreditAmount = bankRow[bankAmountIndex]
           
           const dateMatch = companyDate && bankPostDate ? isDateMatch(companyDate, bankPostDate) : true
-          const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
+          const normalizedBankCheck = normalizeCheckNumber(bankDocNum)
+          const normalizedCompanyCheck = normalizeCheckNumber(companyCheckNumber)
+          const checkMatch = normalizedBankCheck && normalizedCompanyCheck && normalizedBankCheck === normalizedCompanyCheck
           const amountMatch = bankCreditAmount && companyPremiumAmount && 
                  Math.abs(parseFloat(companyPremiumAmount) - parseFloat(bankCreditAmount)) < 0.01
           
@@ -787,7 +888,9 @@ function App() {
             const bankDocNum = bankRow[bankCheckIndex]
             const bankCreditAmount = bankRow[bankAmountIndex]
             
-            const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
+            const normalizedBankCheck = normalizeCheckNumber(bankDocNum)
+            const normalizedCompanyCheck = normalizeCheckNumber(companyCheckNumber)
+            const checkMatch = normalizedBankCheck && normalizedCompanyCheck && normalizedBankCheck === normalizedCompanyCheck
             const amountMatch = bankCreditAmount && companyPremiumAmount && 
                    Math.abs(parseFloat(companyPremiumAmount) - parseFloat(bankCreditAmount)) < 0.01
             
@@ -838,7 +941,7 @@ function App() {
       reviewCompany,
       reviewBank
     }
-  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, essentialMappings, setReconciliationProgress])
+  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, essentialMappings, normalizeCheckNumber, setReconciliationProgress])
 
   // Run reconciliation with progress indicator and chunked processing
   const runReconciliation = useCallback(async () => {
@@ -954,122 +1057,255 @@ function App() {
             <p>Upload company and bank Excel files separately (.xlsx, .xls) for automated reconciliation</p>
           </div>
 
-          {/* Classification Type Selector - Show only when both files are uploaded */}
+          {/* Classification Type Selector - Modern Redesign */}
           {companyData.length > 0 && bankData.length > 0 && (
-            <div className="classification-selector">
-              <h3>🎯 Select Classification Type</h3>
-              <div className="classification-chips">
-                  {Object.entries(editableRules).map(([key, type]) => (
-                    <button
-                      key={key}
-                      className={`classification-chip ${selectedClassificationType === key ? 'active' : ''}`}
-                      onClick={() => handleClassificationTypeChange(key)}
-                    >
-                      <span className="chip-icon">{type.icon}</span>
-                      <span className="chip-name">{type.name}</span>
-                    </button>
-                  ))}
+            <div className="modern-classification-selector">
+              <div className="classification-header">
+                <h3>🎯 Select Classification Type</h3>
+                <p className="classification-description">Choose how to classify transactions in your data for reconciliation</p>
               </div>
-              <div className="classification-info">
-                <div className="info-header">
-                  <p>
-                    <strong>Current Rules:</strong> {editableRules[selectedClassificationType].name}
-                  </p>
-                  <div className="edit-controls">
+              
+              <div className="modern-classification-cards">
+                {Object.entries(editableRules).map(([key, type]) => (
+                  <div
+                    key={key}
+                    className={`modern-classification-card ${selectedClassificationType === key ? 'selected' : ''}`}
+                    onClick={() => handleClassificationTypeChange(key)}
+                  >
+                    <div className="card-header">
+                      <div className="card-icon">{type.icon}</div>
+                      <div className="card-status">
+                        {selectedClassificationType === key && (
+                          <span className="selected-badge">✓ Selected</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="card-body">
+                      <h4 className="card-title">{type.name}</h4>
+                      <p className="card-description">
+                        {getClassificationDescription(key)}
+                      </p>
+                      
+                      <div className="card-stats">
+                        <div className="stat">
+                          <span className="stat-label">🏢 Company Patterns:</span>
+                          <span className="stat-value">{type.companyPatterns.length}</span>
+                        </div>
+                        <div className="stat">
+                          <span className="stat-label">🏦 Bank Patterns:</span>
+                          <span className="stat-value">{type.bankPatterns.length}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="card-footer">
+                      <button 
+                        className={`selection-button ${selectedClassificationType === key ? 'active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleClassificationTypeChange(key)
+                        }}
+                      >
+                        {selectedClassificationType === key ? '✓ Currently Selected' : 'Select This Type'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="modern-rules-section">
+                <div className="rules-header">
+                  <div className="rules-title-group">
+                    <h4>⚙️ Classification Rules & Patterns</h4>
+                    <p className="rules-subtitle">
+                      Configure patterns for: <strong>{editableRules[selectedClassificationType].name}</strong>
+                    </p>
+                  </div>
+                  
+                  <div className="rules-controls">
                     <button 
-                      className="edit-rules-button"
+                      className={`modern-toggle-btn ${isEditingRules ? 'editing' : 'viewing'}`}
                       onClick={() => setIsEditingRules(!isEditingRules)}
                     >
-                      {isEditingRules ? '📋 View Rules' : '✏️ Edit Rules'}
+                      <span className="btn-icon">{isEditingRules ? '👁️' : '✏️'}</span>
+                      <span className="btn-text">
+                        {isEditingRules ? 'Preview Rules' : 'Edit Rules'}
+                      </span>
                     </button>
+                    
                     {isEditingRules && (
                       <button 
-                        className="save-rules-button"
+                        className="modern-save-btn"
                         onClick={saveRules}
                       >
-                        💾 Save Changes
+                        <span className="btn-icon">💾</span>
+                        <span className="btn-text">Save Changes</span>
                       </button>
                     )}
                   </div>
                 </div>
                 
                 {isEditingRules ? (
-                  <div className="rules-editor">
-                    <div className="company-rules-editor">
-                      <strong>Company Patterns:</strong>
-                      <div className="rule-inputs">
-                        {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
-                          <div key={index} className="rule-input-group">
+                  <div className="modern-rules-editor">
+                    <div className="patterns-grid">
+                      {/* Company Patterns Section */}
+                      <div className="pattern-section company-patterns">
+                        <div className="section-header">
+                          <div className="section-icon">🏢</div>
+                          <h5>Company Patterns</h5>
+                          <span className="pattern-count">{editableRules[selectedClassificationType].companyPatterns.length} patterns</span>
+                        </div>
+                        
+                        <div className="pattern-list">
+            {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
+              <div key={index} className="modern-pattern-item">
+                <div className="pattern-number">{index + 1}</div>
+                <input
+                  type="text"
+                  value={pattern}
+                  onChange={(e) => updateRule(selectedClassificationType, 'company', index, e.target.value)}
+                  className="modern-pattern-input"
+                  placeholder="Enter company pattern..."
+                />
+                <button 
+                  className="modern-remove-pattern"
+                  onClick={() => removeRule(selectedClassificationType, 'company', index)}
+                  title="Remove this pattern"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+          </div>
+                          
+                          <button 
+                            className="modern-add-pattern-btn"
+                            onClick={() => addRule(selectedClassificationType, 'company')}
+                          >
+                            <span>➕</span> Add Company Pattern
+                          </button>
+                        </div>
+                      
+                      {/* Bank Patterns Section */}
+                      <div className="pattern-section bank-patterns">
+                        <div className="section-header">
+                          <div className="section-icon">🏦</div>
+                          <h5>Bank Patterns</h5>
+                          <span className="pattern-count">{editableRules[selectedClassificationType].bankPatterns.length} patterns</span>
+                        </div>
+                        
+                        <div className="pattern-list">
+            {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
+              <div key={index} className="modern-pattern-item">
+                <div className="pattern-number">{index + 1}</div>
+                <input
+                  type="text"
+                  value={pattern}
+                  onChange={(e) => updateRule(selectedClassificationType, 'bank', index, e.target.value)}
+                  className="modern-pattern-input"
+                  placeholder="Enter bank pattern..."
+                />
+                <button 
+                  className="modern-remove-pattern"
+                  onClick={() => removeRule(selectedClassificationType, 'bank', index)}
+                  title="Remove this pattern"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))}
+          </div>
+                          
+                          <button 
+                            className="modern-add-pattern-btn bank-add-btn"
+                            onClick={() => addRule(selectedClassificationType, 'bank')}
+                          >
+                            <span>➕</span> Add Bank Pattern
+                          </button>
+                        </div>
+                      
+                      {/* Simple Date Tolerance Section */}
+                      <div className="tolerance-section">
+                        <div className="section-header">
+                          <div className="section-icon">📅</div>
+                          <h5>Date Tolerance</h5>
+                          <span className="pattern-count">{editableRules[selectedClassificationType].useDateTolerance ? `${editableRules[selectedClassificationType].dateTolerance} days` : 'Exact match'}</span>
+                        </div>
+                        
+                        <div className="tolerance-controls-simple">
+                          <label className="tolerance-check">
                             <input
-                              type="text"
-                              value={pattern}
-                              onChange={(e) => updateRule(selectedClassificationType, 'company', index, e.target.value)}
-                              className="rule-input"
-                              placeholder="Enter pattern..."
+                              type="checkbox"
+                              checked={editableRules[selectedClassificationType].useDateTolerance}
+                              onChange={(e) => {
+                                const newRules = { ...editableRules }
+                                newRules[selectedClassificationType].useDateTolerance = e.target.checked
+                                setEditableRules(newRules)
+                              }}
                             />
-                            <button 
-                              className="remove-rule-button"
-                              onClick={() => removeRule(selectedClassificationType, 'company', index)}
-                            >
-                              ❌
-                            </button>
-                          </div>
-                        ))}
-                        <button 
-                          className="add-rule-button"
-                          onClick={() => addRule(selectedClassificationType, 'company')}
-                        >
-                          ➕ Add Pattern
-                        </button>
+                            <span>Enable date tolerance</span>
+                          </label>
+                          
+                          {editableRules[selectedClassificationType].useDateTolerance && (
+                            <div className="tolerance-select-simple">
+                              <label>Tolerance:</label>
+                              <select
+                                value={editableRules[selectedClassificationType].dateTolerance}
+                                onChange={(e) => {
+                                  const newRules = { ...editableRules }
+                                  newRules[selectedClassificationType].dateTolerance = parseInt(e.target.value)
+                                  setEditableRules(newRules)
+                                }}
+                              >
+                                <option value={1}>1 day</option>
+                                <option value={2}>2 days</option>
+                                <option value={3}>3 days</option>
+                                <option value={4}>4 days</option>
+                                <option value={5}>5 days</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="bank-rules-editor">
-                      <strong>Bank Patterns:</strong>
-                      <div className="rule-inputs">
-                        {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
-                          <div key={index} className="rule-input-group">
-                            <input
-                              type="text"
-                              value={pattern}
-                              onChange={(e) => updateRule(selectedClassificationType, 'bank', index, e.target.value)}
-                              className="rule-input"
-                              placeholder="Enter pattern..."
-                            />
-                            <button 
-                              className="remove-rule-button"
-                              onClick={() => removeRule(selectedClassificationType, 'bank', index)}
-                            >
-                              ❌
-                            </button>
-                          </div>
-                        ))}
-                        <button 
-                          className="add-rule-button"
-                          onClick={() => addRule(selectedClassificationType, 'bank')}
-                        >
-                          ➕ Add Pattern
-                        </button>
-                      </div>
+                      
                     </div>
                   </div>
                 ) : (
-                  <div className="rules-display">
-                    <div className="company-rules">
-                      <strong>Company Patterns:</strong>
-                      <ul>
-                        {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
-                          <li key={index}>{pattern}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="bank-rules">
-                      <strong>Bank Patterns:</strong>
-                      <ul>
-                        {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
-                          <li key={index}>{pattern}</li>
-                        ))}
-                      </ul>
+                  <div className="modern-rules-display">
+                    <div className="rules-summary">
+                      <div className="summary-card company-summary">
+                        <div className="summary-header">
+                          <span className="summary-icon">🏢</span>
+                          <h5>Company Patterns</h5>
+                        </div>
+                        <div className="patterns-preview">
+                          {editableRules[selectedClassificationType].companyPatterns.length > 0 ? (
+                            editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
+                              <span key={index} className="pattern-badge">{pattern}</span>
+                            ))
+                          ) : (
+                            <span className="no-patterns">No company patterns defined</span>
+                          )}
+                        </div>
+                        <div className="summary-count">{editableRules[selectedClassificationType].companyPatterns.length} patterns</div>
+                      </div>
+                      
+                      <div className="summary-card bank-summary">
+                        <div className="summary-header">
+                          <span className="summary-icon">🏦</span>
+                          <h5>Bank Patterns</h5>
+                        </div>
+                        <div className="patterns-preview">
+                          {editableRules[selectedClassificationType].bankPatterns.length > 0 ? (
+                            editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
+                              <span key={index} className="pattern-badge">{pattern}</span>
+                            ))
+                          ) : (
+                            <span className="no-patterns">No bank patterns defined</span>
+                          )}
+                        </div>
+                        <div className="summary-count">{editableRules[selectedClassificationType].bankPatterns.length} patterns</div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1129,81 +1365,110 @@ function App() {
                 {showColumnMapping && (
                   <div className="column-mapping">
                     {/* Essential Columns (Required for matching) */}
-                    <div className="essential-mappings-section">
-                      <h5>🔧 Essential Columns (Required for matching)</h5>
+                    {/* Essential Columns Section - Redesigned */}
+                    <div className="modern-mapping-section">
+                      <div className="mapping-header">
+                        <h5>🔧 Essential Columns (Required for matching)</h5>
+                        <p className="mapping-description">Configure the key columns used for reconciliation matching</p>
+                      </div>
+                      
                       {essentialMappings.map((mapping, index) => (
-                        <div key={mapping.id} className="essential-mapping-row">
-                          <div className="mapping-label-input">
-                            <input
-                              type="text"
-                              value={mapping.label}
-                              onChange={(e) => {
-                                const newMappings = [...essentialMappings]
-                                newMappings[index].label = e.target.value
-                                setEssentialMappings(newMappings)
-                              }}
-                              placeholder="Column label"
-                            />
-                          </div>
-                          <div className="mapping-column-selects">
-                            <select
-                              value={mapping.companyColumn}
-                              onChange={(e) => {
-                                const newMappings = [...essentialMappings]
-                                newMappings[index].companyColumn = e.target.value
-                                setEssentialMappings(newMappings)
-                              }}
-                            >
-                              <option value="">-- Select Company Column --</option>
-                              {[...companyHeaders, 'رقم الشيك المستخرج'].map(header => (
-                                <option key={header} value={header}>{header}</option>
-                              ))}
-                            </select>
-                            <select
-                              value={mapping.bankColumn}
-                              onChange={(e) => {
-                                const newMappings = [...essentialMappings]
-                                newMappings[index].bankColumn = e.target.value
-                                setEssentialMappings(newMappings)
-                              }}
-                            >
-                              <option value="">-- Select Bank Column --</option>
-                              {bankHeaders.map(header => (
-                                <option key={header} value={header}>{header}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="mapping-options">
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={mapping.optional}
-                                onChange={(e) => {
-                                  const newMappings = [...essentialMappings]
-                                  newMappings[index].optional = e.target.checked
-                                  setEssentialMappings(newMappings)
-                                }}
-                              />
-                              Optional
-                            </label>
+                        <div key={mapping.id} className="modern-mapping-card">
+                          <div className="mapping-card-header">
+                            <h6>{mapping.label || 'Unnamed Column'}</h6>
                             <button 
-                              className="remove-button"
+                              className="modern-remove-btn"
                               onClick={() => {
                                 const newMappings = essentialMappings.filter((_, i) => i !== index)
                                 setEssentialMappings(newMappings)
                               }}
+                              title="Remove this mapping"
                             >
-                              ❌
+                              🗑️
                             </button>
+                          </div>
+                          
+                          <div className="mapping-card-body">
+                            <div className="mapping-grid">
+                              <div className="mapping-field">
+                                <label className="field-label">📝 Label</label>
+                                <input
+                                  type="text"
+                                  value={mapping.label}
+                                  onChange={(e) => {
+                                    const newMappings = [...essentialMappings]
+                                    newMappings[index].label = e.target.value
+                                    setEssentialMappings(newMappings)
+                                  }}
+                                  placeholder="e.g., Amount, Date, Check Number"
+                                  className="modern-input"
+                                />
+                              </div>
+                              
+                              <div className="mapping-field">
+                                <label className="field-label">🏢 Company Column</label>
+                                <select
+                                  value={mapping.companyColumn}
+                                  onChange={(e) => {
+                                    const newMappings = [...essentialMappings]
+                                    newMappings[index].companyColumn = e.target.value
+                                    setEssentialMappings(newMappings)
+                                  }}
+                                  className="modern-select"
+                                >
+                                  <option value="">-- Select Company Column --</option>
+                                  {[...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج'].map(header => (
+                                    <option key={header} value={header}>{header}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              
+                              <div className="mapping-visual-link">⟷</div>
+                              
+                              <div className="mapping-field">
+                                <label className="field-label">🏦 Bank Column</label>
+                                <select
+                                  value={mapping.bankColumn}
+                                  onChange={(e) => {
+                                    const newMappings = [...essentialMappings]
+                                    newMappings[index].bankColumn = e.target.value
+                                    setEssentialMappings(newMappings)
+                                  }}
+                                  className="modern-select"
+                                >
+                                  <option value="">-- Select Bank Column --</option>
+                                  {bankHeaders.map(header => (
+                                    <option key={header} value={header}>{header}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            
+                            <div className="mapping-footer">
+                              <label className="modern-checkbox">
+                                <input
+                                  type="checkbox"
+                                  checked={mapping.optional}
+                                  onChange={(e) => {
+                                    const newMappings = [...essentialMappings]
+                                    newMappings[index].optional = e.target.checked
+                                    setEssentialMappings(newMappings)
+                                  }}
+                                />
+                                <span className="checkmark"></span>
+                                <span className="checkbox-text">Optional (skip if not available)</span>
+                              </label>
+                            </div>
                           </div>
                         </div>
                       ))}
+                      
                       <button 
-                        className="add-button"
+                        className="modern-add-btn"
                         onClick={() => {
                           const newMapping = {
                             id: `custom_${Date.now()}`,
-                            label: '🔧 New Column',
+                            label: '🔧 New Essential Column',
                             companyColumn: '',
                             bankColumn: '',
                             icon: '🔧',
@@ -1212,82 +1477,112 @@ function App() {
                           setEssentialMappings([...essentialMappings, newMapping])
                         }}
                       >
-                        ➕ Add Essential Column
+                        <span>➕</span> Add Essential Column
                       </button>
                     </div>
 
-                    {/* Custom Column Mappings */}
-                    <div className="custom-mappings-section">
-                      <h5>🔧 Custom Column Mappings</h5>
-                      {customMappings.map((mapping, index) => (
-                        <div key={mapping.id} className="custom-mapping-row">
-                          <div className="mapping-label-input">
-                            <input
-                              type="text"
-                              value={mapping.label}
-                              onChange={(e) => {
-                                const newMappings = [...customMappings]
-                                newMappings[index].label = e.target.value
-                                setCustomMappings(newMappings)
-                              }}
-                              placeholder="Column label"
-                            />
-                          </div>
-                          <div className="mapping-column-selects">
-                            <select
-                              value={mapping.companyColumn}
-                              onChange={(e) => {
-                                const newMappings = [...customMappings]
-                                newMappings[index].companyColumn = e.target.value
-                                setCustomMappings(newMappings)
-                              }}
-                            >
-                              <option value="">-- Select Company Column --</option>
-                              {[...companyHeaders, 'رقم الشيك المستخرج'].map(header => (
-                                <option key={header} value={header}>{header}</option>
-                              ))}
-                            </select>
-                            <select
-                              value={mapping.bankColumn}
-                              onChange={(e) => {
-                                const newMappings = [...customMappings]
-                                newMappings[index].bankColumn = e.target.value
-                                setCustomMappings(newMappings)
-                              }}
-                            >
-                              <option value="">-- Select Bank Column --</option>
-                              {bankHeaders.map(header => (
-                                <option key={header} value={header}>{header}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="mapping-options">
-                            <button 
-                              className="remove-button"
-                              onClick={() => {
-                                const newMappings = customMappings.filter((_, i) => i !== index)
-                                setCustomMappings(newMappings)
-                              }}
-                            >
-                              ❌
-                            </button>
-                          </div>
+                    {/* Custom Column Mappings - Redesigned */}
+                    <div className="modern-mapping-section">
+                      <div className="mapping-header">
+                        <h5>🔗 Custom Column Mappings</h5>
+                        <p className="mapping-description">Add additional column mappings for extended reconciliation</p>
+                      </div>
+                      
+                      {customMappings.length === 0 ? (
+                        <div className="empty-state">
+                          <p>📄 No custom mappings yet. Add your first custom column mapping below.</p>
                         </div>
-                      ))}
+                      ) : (
+                        customMappings.map((mapping, index) => (
+                          <div key={mapping.id} className="modern-mapping-card custom-card">
+                            <div className="mapping-card-header">
+                              <h6>{mapping.label || 'Unnamed Custom Column'}</h6>
+                              <button 
+                                className="modern-remove-btn"
+                                onClick={() => {
+                                  const newMappings = customMappings.filter((_, i) => i !== index)
+                                  setCustomMappings(newMappings)
+                                }}
+                                title="Remove this custom mapping"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                            
+                            <div className="mapping-card-body">
+                              <div className="mapping-grid">
+                                <div className="mapping-field">
+                                  <label className="field-label">📝 Label</label>
+                                  <input
+                                    type="text"
+                                    value={mapping.label}
+                                    onChange={(e) => {
+                                      const newMappings = [...customMappings]
+                                      newMappings[index].label = e.target.value
+                                      setCustomMappings(newMappings)
+                                    }}
+                                    placeholder="e.g., Reference Number, Notes"
+                                    className="modern-input"
+                                  />
+                                </div>
+                                
+                                <div className="mapping-field">
+                                  <label className="field-label">🏢 Company Column</label>
+                                  <select
+                                    value={mapping.companyColumn}
+                                    onChange={(e) => {
+                                      const newMappings = [...customMappings]
+                                      newMappings[index].companyColumn = e.target.value
+                                      setCustomMappings(newMappings)
+                                    }}
+                                    className="modern-select"
+                                  >
+                                    <option value="">-- Select Company Column --</option>
+                                    {[...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج'].map(header => (
+                                      <option key={header} value={header}>{header}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                
+                                <div className="mapping-visual-link">⟷</div>
+                                
+                                <div className="mapping-field">
+                                  <label className="field-label">🏦 Bank Column</label>
+                                  <select
+                                    value={mapping.bankColumn}
+                                    onChange={(e) => {
+                                      const newMappings = [...customMappings]
+                                      newMappings[index].bankColumn = e.target.value
+                                      setCustomMappings(newMappings)
+                                    }}
+                                    className="modern-select"
+                                  >
+                                    <option value="">-- Select Bank Column --</option>
+                                    {bankHeaders.map(header => (
+                                      <option key={header} value={header}>{header}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                      
                       <button 
-                        className="add-button"
+                        className="modern-add-btn secondary-btn"
                         onClick={() => {
                           const newMapping = {
                             id: `custom_${Date.now()}`,
-                            label: '🔧 New Custom Column',
+                            label: '🔗 New Custom Column',
                             companyColumn: '',
                             bankColumn: '',
-                            icon: '🔧'
+                            icon: '🔗'
                           }
                           setCustomMappings([...customMappings, newMapping])
                         }}
                       >
-                        ➕ Add Custom Column
+                        <span>🔗</span> Add Custom Column
                       </button>
                     </div>
 
@@ -1618,6 +1913,50 @@ function App() {
                       </button>
                     </div>
                   )}
+                  
+                  {/* Date Tolerance Debug Info */}
+                  <div className="tolerance-debug-section">
+                    <div className="debug-header">
+                      <h4>🔍 Date Tolerance Debug Info</h4>
+                    </div>
+                    <div className="debug-info">
+                      <div className="debug-item">
+                        <span className="debug-label">Current Classification:</span>
+                        <span className="debug-value">{classificationTypes[selectedClassificationType]?.name}</span>
+                      </div>
+                      <div className="debug-item">
+                        <span className="debug-label">Date Tolerance:</span>
+                        <span className="debug-value">
+                          {editableRules[selectedClassificationType]?.useDateTolerance 
+                            ? `${editableRules[selectedClassificationType]?.dateTolerance} days` 
+                            : 'Exact match only'
+                          }
+                        </span>
+                      </div>
+                      <div className="debug-item">
+                        <span className="debug-label">Tolerance Enabled:</span>
+                        <span className="debug-value">
+                          {editableRules[selectedClassificationType]?.useDateTolerance ? '✅ Yes' : '❌ No'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="debug-actions">
+                      <button 
+                        className="test-tolerance-btn"
+                        onClick={testDateTolerance}
+                      >
+                        🧪 Test Date Tolerance
+                      </button>
+                      <button 
+                        className="test-tolerance-btn"
+                        onClick={testCheckNumberNormalization}
+                      >
+                        🔢 Test Check Numbers
+                      </button>
+                      <small className="debug-note">Check browser console for detailed test results</small>
+                    </div>
+                  </div>
+                  
                   {checksCollectionResults && (
                 <div className="reconciliation-stats">
                   <div className="stat-card">
