@@ -678,14 +678,51 @@ function App() {
     )
     const formattedBankData = formatBankData(bankClassifiedData, bankHeaders)
     
-    // Find column indices dynamically
-    const companyDateIndex = [...companyHeaders, 'رقم الشيك المستخرج'].indexOf(columnMapping.companyDateColumn)
-    const companyCheckIndex = [...companyHeaders, 'رقم الشيك المستخرج'].indexOf(columnMapping.companyCheckColumn)
-    const companyDebitIndex = [...companyHeaders, 'رقم الشيك المستخرج'].indexOf(columnMapping.companyAmountColumn)
+    // Find column indices from Essential Columns configuration
+    const getColumnIndices = () => {
+      const companyHeadersWithChecks = [...companyHeaders, 'رقم الشيك المستخرج']
+      
+      // Get Essential Column mappings
+      const amountMapping = essentialMappings.find(m => m.id === 'amount')
+      const checkMapping = essentialMappings.find(m => m.id === 'check') 
+      const dateMapping = essentialMappings.find(m => m.id === 'date')
+      
+      console.log('🔍 Essential Mappings:', { amountMapping, checkMapping, dateMapping })
+      
+      // Validate required mappings
+      if (!amountMapping || !amountMapping.companyColumn || !amountMapping.bankColumn) {
+        throw new Error('💰 Amount column mapping is required but not configured')
+      }
+      if (!checkMapping || !checkMapping.companyColumn || !checkMapping.bankColumn) {
+        throw new Error('🧾 Check column mapping is required but not configured')
+      }
+      
+      return {
+        // Company column indices
+        companyAmountIndex: companyHeadersWithChecks.indexOf(amountMapping.companyColumn),
+        companyCheckIndex: companyHeadersWithChecks.indexOf(checkMapping.companyColumn),
+        companyDateIndex: dateMapping && dateMapping.companyColumn ? 
+          companyHeadersWithChecks.indexOf(dateMapping.companyColumn) : -1,
+        
+        // Bank column indices  
+        bankAmountIndex: bankHeaders.indexOf(amountMapping.bankColumn),
+        bankCheckIndex: bankHeaders.indexOf(checkMapping.bankColumn),
+        bankDateIndex: dateMapping && dateMapping.bankColumn ? 
+          bankHeaders.indexOf(dateMapping.bankColumn) : -1
+      }
+    }
     
-    const bankPostDateIndex = bankHeaders.indexOf(columnMapping.bankDateColumn)
-    const bankDocNumIndex = bankHeaders.indexOf(columnMapping.bankCheckColumn)
-    const bankCreditIndex = bankHeaders.indexOf(columnMapping.bankAmountColumn)
+    const indices = getColumnIndices()
+    const { 
+      companyAmountIndex,
+      companyCheckIndex, 
+      companyDateIndex,
+      bankAmountIndex,
+      bankCheckIndex,
+      bankDateIndex 
+    } = indices
+    
+    console.log('📍 Column indices:', indices)
 
     const matchedCompany = []
     const unmatchedCompany = []
@@ -714,25 +751,26 @@ function App() {
       const chunk = companyChunks[chunkIndex]
       
       for (const companyRow of chunk) {
-        const companyDate = companyRow[companyDateIndex]
+        const companyDate = companyDateIndex !== -1 ? companyRow[companyDateIndex] : null
         const companyCheckNumber = companyRow[companyCheckIndex]
-        const companyDebitAmount = companyRow[companyDebitIndex]
+        const companyPremiumAmount = companyRow[companyAmountIndex]
         
-        if (!companyDate || !companyCheckNumber || !companyDebitAmount) {
+        if (!companyCheckNumber || !companyPremiumAmount) {
+          console.log('⏭️ Skipping company row - missing check number or amount:', { companyCheckNumber, companyPremiumAmount })
           unmatchedCompany.push(companyRow)
           continue
         }
 
         // Find matching bank entry
         let matchingBank = formattedBankData.find(bankRow => {
-          const bankPostDate = bankRow[bankPostDateIndex]
-          const bankDocNum = bankRow[bankDocNumIndex]
-          const bankCreditAmount = bankRow[bankCreditIndex]
+          const bankPostDate = bankDateIndex !== -1 ? bankRow[bankDateIndex] : null
+          const bankDocNum = bankRow[bankCheckIndex]
+          const bankCreditAmount = bankRow[bankAmountIndex]
           
-          const dateMatch = isDateMatch(companyDate, bankPostDate)
+          const dateMatch = companyDate && bankPostDate ? isDateMatch(companyDate, bankPostDate) : true
           const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
-          const amountMatch = bankCreditAmount && companyDebitAmount && 
-                 Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
+          const amountMatch = bankCreditAmount && companyPremiumAmount && 
+                 Math.abs(parseFloat(companyPremiumAmount) - parseFloat(bankCreditAmount)) < 0.01
           
           return dateMatch && checkMatch && amountMatch
         })
@@ -745,13 +783,13 @@ function App() {
         } else {
           // Check for review match
           const reviewBankMatch = formattedBankData.find(bankRow => {
-            const bankPostDate = bankRow[bankPostDateIndex]
-            const bankDocNum = bankRow[bankDocNumIndex]
-            const bankCreditAmount = bankRow[bankCreditIndex]
+            const bankPostDate = bankDateIndex !== -1 ? bankRow[bankDateIndex] : null
+            const bankDocNum = bankRow[bankCheckIndex]
+            const bankCreditAmount = bankRow[bankAmountIndex]
             
             const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
-            const amountMatch = bankCreditAmount && companyDebitAmount && 
-                   Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
+            const amountMatch = bankCreditAmount && companyPremiumAmount && 
+                   Math.abs(parseFloat(companyPremiumAmount) - parseFloat(bankCreditAmount)) < 0.01
             
             const hasDates = companyDate && bankPostDate
             const dateMismatch = hasDates && !isDateMatch(companyDate, bankPostDate)
@@ -800,7 +838,7 @@ function App() {
       reviewCompany,
       reviewBank
     }
-  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, columnMapping, setReconciliationProgress])
+  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, essentialMappings, setReconciliationProgress])
 
   // Run reconciliation with progress indicator and chunked processing
   const runReconciliation = useCallback(async () => {
@@ -1486,55 +1524,6 @@ function App() {
                 <button onClick={() => clearData('bank')} className="clear-button">
                   Clear
                 </button>
-              </div>
-            )}
-
-            {/* Bank Data Preview */}
-            {bankData.length > 0 && (
-              <div className="data-container">
-                <div className="table-header">
-                  <h3>📊 Bank Data Preview ({bankData.length} rows)</h3>
-                  <button 
-                    className="download-button"
-                    onClick={() => downloadAsExcel(
-                      bankDataFormatted, 
-                      bankHeaders, 
-                      'bank_data.xlsx'
-                    )}
-                  >
-                    📥 Download Excel
-                  </button>
-                </div>
-                <div className="table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        {bankHeaders.map((header, index) => (
-                          <th key={index}>{header || `Column ${index + 1}`}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bankDataFormatted.slice(0, bankPreviewLimit).map((row, rowIndex) => (
-                        <tr key={rowIndex}>
-                          {bankHeaders.map((_, colIndex) => (
-                            <td key={colIndex}>
-                              {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {bankData.length > bankPreviewLimit && (
-                    <p className="preview-note">
-                      Showing first {bankPreviewLimit} of {bankData.length} rows
-                    </p>
-                  )}
-                </div>
-                <p className="data-note">
-                  Showing all {bankData.length} rows of bank data
-                </p>
               </div>
             )}
 
