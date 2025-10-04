@@ -143,7 +143,7 @@ function App() {
   // Essential column mappings (editable)
   const [essentialMappings, setEssentialMappings] = useState([
     { id: 'amount', label: '💰 Amount Column', companyColumn: 'دائن', bankColumn: '', icon: '💰' },
-    { id: 'check', label: '🧾 Check Column', companyColumn: 'رقم الشيك المستخرج', bankColumn: '', icon: '🧾' },
+    { id: 'check', label: '🧾 Check Column (Required for checks)', companyColumn: 'رقم الشيك المستخرج', bankColumn: '', icon: '🧾', optional: true },
     { id: 'date', label: '📅 Date Column (Optional)', companyColumn: 'التاريخ', bankColumn: '', icon: '📅', optional: true }
   ])
 
@@ -824,20 +824,25 @@ function App() {
       if (!amountMapping || !amountMapping.companyColumn || !amountMapping.bankColumn) {
         throw new Error('💰 Amount column mapping is required but not configured')
       }
-      if (!checkMapping || !checkMapping.companyColumn || !checkMapping.bankColumn) {
+      
+      // Check mapping is only required for check-based payment types
+      const requiresCheckMapping = ['checks-collection', 'returned-checks'].includes(selectedClassificationType)
+      if (requiresCheckMapping && (!checkMapping || !checkMapping.companyColumn || !checkMapping.bankColumn)) {
         throw new Error('🧾 Check column mapping is required but not configured')
       }
       
       return {
         // Company column indices
         companyAmountIndex: companyHeadersWithChecks.indexOf(amountMapping.companyColumn),
-        companyCheckIndex: companyHeadersWithChecks.indexOf(checkMapping.companyColumn),
+        companyCheckIndex: checkMapping && checkMapping.companyColumn ? 
+          companyHeadersWithChecks.indexOf(checkMapping.companyColumn) : -1,
         companyDateIndex: dateMapping && dateMapping.companyColumn ? 
           companyHeadersWithChecks.indexOf(dateMapping.companyColumn) : -1,
         
         // Bank column indices  
         bankAmountIndex: bankHeaders.indexOf(amountMapping.bankColumn),
-        bankCheckIndex: bankHeaders.indexOf(checkMapping.bankColumn),
+        bankCheckIndex: checkMapping && checkMapping.bankColumn ? 
+          bankHeaders.indexOf(checkMapping.bankColumn) : -1,
         bankDateIndex: dateMapping && dateMapping.bankColumn ? 
           bankHeaders.indexOf(dateMapping.bankColumn) : -1
       }
@@ -883,11 +888,20 @@ function App() {
       
       for (const companyRow of chunk) {
         const companyDate = companyDateIndex !== -1 ? companyRow[companyDateIndex] : null
-        const companyCheckNumber = companyRow[companyCheckIndex]
+        const companyCheckNumber = companyCheckIndex !== -1 ? companyRow[companyCheckIndex] : null
         const companyPremiumAmount = companyRow[companyAmountIndex]
         
-        if (!companyCheckNumber || !companyPremiumAmount) {
-          console.log('⏭️ Skipping company row - missing check number or amount:', { companyCheckNumber, companyPremiumAmount })
+        // For visa payments, we don't require check numbers
+        const requiresCheckNumber = ['checks-collection', 'returned-checks'].includes(selectedClassificationType)
+        
+        if (!companyPremiumAmount) {
+          console.log('⏭️ Skipping company row - missing amount:', { companyPremiumAmount })
+          unmatchedCompany.push(companyRow)
+          continue
+        }
+        
+        if (requiresCheckNumber && !companyCheckNumber) {
+          console.log('⏭️ Skipping company row - missing check number:', { companyCheckNumber })
           unmatchedCompany.push(companyRow)
           continue
         }
@@ -895,17 +909,23 @@ function App() {
         // Find matching bank entry
         let matchingBank = formattedBankData.find(bankRow => {
           const bankPostDate = bankDateIndex !== -1 ? bankRow[bankDateIndex] : null
-          const bankDocNum = bankRow[bankCheckIndex]
+          const bankDocNum = bankCheckIndex !== -1 ? bankRow[bankCheckIndex] : null
           const bankCreditAmount = bankRow[bankAmountIndex]
           
           const dateMatch = companyDate && bankPostDate ? isDateMatch(companyDate, bankPostDate) : true
-          const normalizedBankCheck = normalizeCheckNumber(bankDocNum)
-          const normalizedCompanyCheck = normalizeCheckNumber(companyCheckNumber)
-          const checkMatch = normalizedBankCheck && normalizedCompanyCheck && normalizedBankCheck === normalizedCompanyCheck
           const amountMatch = bankCreditAmount && companyPremiumAmount && 
                  Math.abs(parseFloat(companyPremiumAmount) - parseFloat(bankCreditAmount)) < 0.01
           
-          return dateMatch && checkMatch && amountMatch
+          // For check-based payments, require check number match
+          if (requiresCheckNumber) {
+            const normalizedBankCheck = normalizeCheckNumber(bankDocNum)
+            const normalizedCompanyCheck = normalizeCheckNumber(companyCheckNumber)
+            const checkMatch = normalizedBankCheck && normalizedCompanyCheck && normalizedBankCheck === normalizedCompanyCheck
+            return dateMatch && checkMatch && amountMatch
+          } else {
+            // For visa payments and other non-check payments, match by amount and date only
+            return dateMatch && amountMatch
+          }
         })
 
         if (matchingBank) {
@@ -917,19 +937,25 @@ function App() {
           // Check for review match
           const reviewBankMatch = formattedBankData.find(bankRow => {
             const bankPostDate = bankDateIndex !== -1 ? bankRow[bankDateIndex] : null
-            const bankDocNum = bankRow[bankCheckIndex]
+            const bankDocNum = bankCheckIndex !== -1 ? bankRow[bankCheckIndex] : null
             const bankCreditAmount = bankRow[bankAmountIndex]
             
-            const normalizedBankCheck = normalizeCheckNumber(bankDocNum)
-            const normalizedCompanyCheck = normalizeCheckNumber(companyCheckNumber)
-            const checkMatch = normalizedBankCheck && normalizedCompanyCheck && normalizedBankCheck === normalizedCompanyCheck
             const amountMatch = bankCreditAmount && companyPremiumAmount && 
                    Math.abs(parseFloat(companyPremiumAmount) - parseFloat(bankCreditAmount)) < 0.01
             
             const hasDates = companyDate && bankPostDate
             const dateMismatch = hasDates && !isDateMatch(companyDate, bankPostDate)
             
-            return checkMatch && amountMatch && dateMismatch
+            // For check-based payments, require check number match
+            if (requiresCheckNumber) {
+              const normalizedBankCheck = normalizeCheckNumber(bankDocNum)
+              const normalizedCompanyCheck = normalizeCheckNumber(companyCheckNumber)
+              const checkMatch = normalizedBankCheck && normalizedCompanyCheck && normalizedBankCheck === normalizedCompanyCheck
+              return checkMatch && amountMatch && dateMismatch
+            } else {
+              // For visa payments and other non-check payments, match by amount and date mismatch only
+              return amountMatch && dateMismatch
+            }
           })
 
           if (reviewBankMatch) {
@@ -973,7 +999,7 @@ function App() {
       reviewCompany,
       reviewBank
     }
-  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, essentialMappings, normalizeCheckNumber, setReconciliationProgress])
+  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, essentialMappings, normalizeCheckNumber, setReconciliationProgress, selectedClassificationType])
 
   // Run reconciliation with progress indicator and chunked processing
   const runReconciliation = useCallback(async () => {
