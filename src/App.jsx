@@ -29,14 +29,14 @@ function App() {
         name: 'Checks Collection',
         icon: '🏦',
         companyPatterns: [
-          'اعادة ايداع شيك راجع',
-          'ايداع شيكات مقاصة',
-          'و ذلك عن تحصيل شيك'
+          { pattern: 'اعادة ايداع شيك راجع', matchType: 'startsWith' },
+          { pattern: 'ايداع شيكات مقاصة', matchType: 'startsWith' },
+          { pattern: 'و ذلك عن تحصيل شيك', matchType: 'includes' }
         ],
         bankPatterns: [
-          'CHECK DEPOSIT',
-          'CLEAR. DEPO.',
-          'INTERNAL CLEARING'
+          { pattern: 'CHECK DEPOSIT', matchType: 'startsWith' },
+          { pattern: 'CLEAR. DEPO.', matchType: 'startsWith' },
+          { pattern: 'INTERNAL CLEARING', matchType: 'includes' }
         ],
         dateTolerance: 4,
         useDateTolerance: true
@@ -45,13 +45,13 @@ function App() {
       name: 'Returned Checks',
       icon: '📊',
       companyPatterns: [
-        'شيك راجع',
-        'ارجاع شيك بعد اعادة ايداعه',
+        { pattern: 'شيك راجع', matchType: 'startsWith' },
+        { pattern: 'ارجاع شيك بعد اعادة ايداعه', matchType: 'includes' },
       ],
       bankPatterns: [
-        'RETURN CHEQUE , TRANSIT',
-        'RETURNED CHECK FROM OTHER BANK',
-        'RETURNED POST DATED/INSTALLMENT CHEQUES'
+        { pattern: 'RETURN CHEQUE , TRANSIT', matchType: 'startsWith' },
+        { pattern: 'RETURNED CHECK FROM OTHER BANK', matchType: 'includes' },
+        { pattern: 'RETURNED POST DATED/INSTALLMENT CHEQUES', matchType: 'includes' }
       ],
       dateTolerance: 4,
       useDateTolerance: true
@@ -59,30 +59,30 @@ function App() {
     'disbursement': {
       name: 'Disbursement',
       icon: '💼',
-      companyPatterns: [
-        'سند صرف',
-        'دفعة أدعاء',
-      ],
-      bankPatterns: [
-        'CLEARING WITHDRAWAL',
-        'SWIFT TRANSFER',
-        'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT'
-      ],
+        companyPatterns: [
+          { pattern: 'سند صرف', matchType: 'startsWith' },
+          { pattern: 'دفعة أدعاء', matchType: 'startsWith' }
+        ],
+        bankPatterns: [
+          { pattern: 'CLEARING WITHDRAWAL', matchType: 'startsWith' },
+          { pattern: 'SWIFT TRANSFER', matchType: 'startsWith' },
+          { pattern: 'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT', matchType: 'includes' }
+        ],
       dateTolerance: 3,
       useDateTolerance: true
     },
     'cash-inflow': {
       name: 'Cash Inflow',
       icon: '🔍',
-      companyPatterns: [
-        'حوالة ',
-        'نقل ختم',
-        'ايداع نقدي'
-      ],
+        companyPatterns: [
+          { pattern: 'حوالة ', matchType: 'startsWith' },
+          { pattern: 'نقل ختم', matchType: 'startsWith' },
+          { pattern: 'ايداع نقدي', matchType: 'startsWith' }
+        ],
       bankPatterns: [
-        'CASH DEPOSIT',
-        'Electronic Transfer',
-        'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT'
+        { pattern: 'CASH DEPOSIT', matchType: 'startsWith' },
+        { pattern: 'Electronic Transfer', matchType: 'startsWith' },
+        { pattern: 'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT', matchType: 'includes' }
       ],
       dateTolerance: 3,
       useDateTolerance: true
@@ -186,6 +186,21 @@ function App() {
     })
   }, [])
 
+  // Helper function to check pattern matching with configurable match type
+  const checkPatternMatch = useCallback((text, patternObj) => {
+    const textStr = text.toString().trim()
+    const patternValue = typeof patternObj === 'string' ? patternObj : patternObj.pattern
+    const matchType = typeof patternObj === 'string' ? 'startsWith' : patternObj.matchType || 'startsWith'
+    
+    if (matchType === 'includes') {
+      return textStr.includes(patternValue)
+    } else if (matchType === 'both') {
+      return textStr.startsWith(patternValue) || textStr.includes(patternValue)
+    } else {
+      return textStr.startsWith(patternValue)
+    }
+  }, [])
+
   const classifyCompanyData = useCallback((data, headers, classificationType = 'checks-collection') => {
     console.log('🔍 Company classification:', classificationType)
     const classificationColumnIndex = headers.findIndex(header => header === classificationColumns.companyColumn)
@@ -202,7 +217,7 @@ function App() {
     data.forEach(row => {
       const classificationValue = row[classificationColumnIndex]
       const shouldClassify = classificationValue && patterns.some(pattern =>
-        classificationValue.toString().trim().startsWith(pattern)
+        checkPatternMatch(classificationValue, pattern)
       )
 
       if (shouldClassify) {
@@ -213,7 +228,7 @@ function App() {
     })
 
     return { classified, remaining }
-  }, [editableRules, classificationColumns])
+  }, [editableRules, classificationColumns, checkPatternMatch])
 
   const classifyBankData = useCallback((data, headers, classificationType = 'returned-checks') => {
     console.log('🔍 Bank classification:', classificationType)
@@ -235,19 +250,15 @@ function App() {
     data.forEach(row => {
       const classificationValue = row[bankClassificationColumnIndex]
       
-      // Simple pattern matching - check if bank text starts with any pattern
-      const shouldClassify = patterns.some(pattern => {
-        const bankText = classificationValue ? classificationValue.toString().trim() : ''
-        return bankText.toUpperCase().startsWith(pattern.toUpperCase()) || 
-               normalizeText(bankText).startsWith(normalizeText(pattern))
-      })
+      // Pattern matching using configurable match types
+      const shouldClassify = patterns.some(pattern => 
+        checkPatternMatch(classificationValue, pattern)
+      )
 
       if (shouldClassify) {
-        const matchedPatterns = patterns.filter(pattern => {
-          const bankText = classificationValue ? classificationValue.toString().trim() : ''
-          return bankText.toUpperCase().startsWith(pattern.toUpperCase()) || 
-                 normalizeText(bankText).startsWith(normalizeText(pattern))
-        })
+        const matchedPatterns = patterns.filter(pattern => 
+          checkPatternMatch(classificationValue, pattern)
+        )
         console.log(`✅ Bank classified row: "${classificationValue}" matched patterns:`, matchedPatterns)
         classified.push(row)
       } else {
@@ -256,7 +267,7 @@ function App() {
     })
 
     return { classified, remaining }
-  }, [editableRules, classificationColumns])
+  }, [editableRules, classificationColumns, checkPatternMatch])
   
   // Handle classification type change
   const handleClassificationTypeChange = useCallback((type) => {
@@ -306,7 +317,7 @@ function App() {
       ...prev,
       [classificationType]: {
         ...prev[classificationType],
-        [`${dataType}Patterns`]: [...prev[classificationType][`${dataType}Patterns`], '']
+        [`${dataType}Patterns`]: [...prev[classificationType][`${dataType}Patterns`], { pattern: '', matchType: 'startsWith' }]
       }
     }))
   }, [])
@@ -1033,6 +1044,7 @@ function App() {
               </div>
             </div>
             <nav className="header-nav">
+              
               {/* <div className="nav-item">
                 <span className="nav-icon">📊</span>
                 <span>Data Processing</span>
@@ -1157,25 +1169,49 @@ function App() {
                         </div>
                         
                         <div className="pattern-list">
-            {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
-              <div key={index} className="modern-pattern-item">
-                <div className="pattern-number">{index + 1}</div>
-                <input
-                  type="text"
-                  value={pattern}
-                  onChange={(e) => updateRule(selectedClassificationType, 'company', index, e.target.value)}
-                  className="modern-pattern-input"
-                  placeholder="Enter company pattern..."
-                />
-                <button 
-                  className="modern-remove-pattern"
-                  onClick={() => removeRule(selectedClassificationType, 'company', index)}
-                  title="Remove this pattern"
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
+            {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => {
+              const patternValue = typeof pattern === 'string' ? pattern : pattern.pattern
+              const matchType = typeof pattern === 'string' ? 'startsWith' : pattern.matchType || 'startsWith'
+              
+              return (
+                <div key={index} className="modern-pattern-item">
+                  <div className="pattern-number">{index + 1}</div>
+                  <input
+                    type="text"
+                    value={patternValue}
+                    onChange={(e) => {
+                      const newPattern = typeof pattern === 'string' 
+                        ? e.target.value 
+                        : { pattern: e.target.value, matchType }
+                      updateRule(selectedClassificationType, 'company', index, newPattern)
+                    }}
+                    className="modern-pattern-input"
+                    placeholder="Enter company pattern..."
+                  />
+                  <select
+                    value={matchType}
+                    onChange={(e) => {
+                      const newPattern = typeof pattern === 'string'
+                        ? { pattern: patternValue, matchType: e.target.value }
+                        : { pattern: patternValue, matchType: e.target.value }
+                      updateRule(selectedClassificationType, 'company', index, newPattern)
+                    }}
+                    className="pattern-match-type-select"
+                  >
+                    <option value="startsWith">Starts with</option>
+                    <option value="includes">Includes</option>
+                    <option value="both">Both (Starts with OR Includes)</option>
+                  </select>
+                  <button 
+                    className="modern-remove-pattern"
+                    onClick={() => removeRule(selectedClassificationType, 'company', index)}
+                    title="Remove this pattern"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              )
+            })}
           </div>
                           
                           <button 
@@ -1195,25 +1231,49 @@ function App() {
                         </div>
                         
                         <div className="pattern-list">
-            {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
-              <div key={index} className="modern-pattern-item">
-                <div className="pattern-number">{index + 1}</div>
-                <input
-                  type="text"
-                  value={pattern}
-                  onChange={(e) => updateRule(selectedClassificationType, 'bank', index, e.target.value)}
-                  className="modern-pattern-input"
-                  placeholder="Enter bank pattern..."
-                />
-                <button 
-                  className="modern-remove-pattern"
-                  onClick={() => removeRule(selectedClassificationType, 'bank', index)}
-                  title="Remove this pattern"
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
+            {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => {
+              const patternValue = typeof pattern === 'string' ? pattern : pattern.pattern
+              const matchType = typeof pattern === 'string' ? 'startsWith' : pattern.matchType || 'startsWith'
+              
+              return (
+                <div key={index} className="modern-pattern-item">
+                  <div className="pattern-number">{index + 1}</div>
+                  <input
+                    type="text"
+                    value={patternValue}
+                    onChange={(e) => {
+                      const newPattern = typeof pattern === 'string' 
+                        ? e.target.value 
+                        : { pattern: e.target.value, matchType }
+                      updateRule(selectedClassificationType, 'bank', index, newPattern)
+                    }}
+                    className="modern-pattern-input"
+                    placeholder="Enter bank pattern..."
+                  />
+                  <select
+                    value={matchType}
+                    onChange={(e) => {
+                      const newPattern = typeof pattern === 'string'
+                        ? { pattern: patternValue, matchType: e.target.value }
+                        : { pattern: patternValue, matchType: e.target.value }
+                      updateRule(selectedClassificationType, 'bank', index, newPattern)
+                    }}
+                    className="pattern-match-type-select"
+                  >
+                    <option value="startsWith">Starts with</option>
+                    <option value="includes">Includes</option>
+                    <option value="both">Both (Starts with OR Includes)</option>
+                  </select>
+                  <button 
+                    className="modern-remove-pattern"
+                    onClick={() => removeRule(selectedClassificationType, 'bank', index)}
+                    title="Remove this pattern"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              )
+            })}
           </div>
                           
                           <button 
@@ -1281,7 +1341,7 @@ function App() {
                         <div className="patterns-preview">
                           {editableRules[selectedClassificationType].companyPatterns.length > 0 ? (
                             editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
-                              <span key={index} className="pattern-badge">{pattern}</span>
+                              <span key={index} className="pattern-badge">{typeof pattern === 'string' ? pattern : pattern.pattern}</span>
                             ))
                           ) : (
                             <span className="no-patterns">No company patterns defined</span>
@@ -1298,7 +1358,7 @@ function App() {
                         <div className="patterns-preview">
                           {editableRules[selectedClassificationType].bankPatterns.length > 0 ? (
                             editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
-                              <span key={index} className="pattern-badge">{pattern}</span>
+                              <span key={index} className="pattern-badge">{typeof pattern === 'string' ? pattern : pattern.pattern}</span>
                             ))
                           ) : (
                             <span className="no-patterns">No bank patterns defined</span>
