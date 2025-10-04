@@ -132,6 +132,9 @@ function App() {
     { id: 'date', label: '📅 Date Column (Optional)', companyColumn: 'التاريخ', bankColumn: '', icon: '📅', optional: true }
   ])
 
+  // Custom column mappings (add/delete functionality)
+  const [customMappings, setCustomMappings] = useState([])
+
   // Classification column configuration
   const [classificationColumns, setClassificationColumns] = useState({
     companyColumn: 'البيان',
@@ -1068,101 +1071,189 @@ function App() {
                 
                 {showColumnMapping && (
                   <div className="column-mapping">
-                    <div className="mapping-grid">
-                      <div className="company-columns">
-                        <h5>Company Data Columns</h5>
-                        <div className="column-select">
-                          <label>📅 Date Column:</label>
-                          <select 
-                            value={columnMapping.companyDateColumn}
-                            onChange={(e) => setColumnMapping(prev => ({
-                              ...prev,
-                              companyDateColumn: e.target.value
-                            }))}
-                          >
-                            <option value="التاريخ">التاريخ</option>
-                            <option value="تاريخ الادخال">تاريخ الادخال</option>
-                          </select>
+                    {/* Essential Columns (Required for matching) */}
+                    <div className="essential-mappings-section">
+                      <h5>🔧 Essential Columns (Required for matching)</h5>
+                      {essentialMappings.map((mapping, index) => (
+                        <div key={mapping.id} className="essential-mapping-row">
+                          <div className="mapping-label-input">
+                            <input
+                              type="text"
+                              value={mapping.label}
+                              onChange={(e) => {
+                                const newMappings = [...essentialMappings]
+                                newMappings[index].label = e.target.value
+                                setEssentialMappings(newMappings)
+                              }}
+                              placeholder="Column label"
+                            />
+                          </div>
+                          <div className="mapping-column-selects">
+                            <select
+                              value={mapping.companyColumn}
+                              onChange={(e) => {
+                                const newMappings = [...essentialMappings]
+                                newMappings[index].companyColumn = e.target.value
+                                setEssentialMappings(newMappings)
+                              }}
+                            >
+                              <option value="">-- Select Company Column --</option>
+                              {companyHeaders.map(header => (
+                                <option key={header} value={header}>{header}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={mapping.bankColumn}
+                              onChange={(e) => {
+                                const newMappings = [...essentialMappings]
+                                newMappings[index].bankColumn = e.target.value
+                                setEssentialMappings(newMappings)
+                              }}
+                            >
+                              <option value="">-- Select Bank Column --</option>
+                              {bankHeaders.map(header => (
+                                <option key={header} value={header}>{header}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="mapping-options">
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={mapping.optional}
+                                onChange={(e) => {
+                                  const newMappings = [...essentialMappings]
+                                  newMappings[index].optional = e.target.checked
+                                  setEssentialMappings(newMappings)
+                                }}
+                              />
+                              Optional
+                            </label>
+                            <button 
+                              className="remove-button"
+                              onClick={() => {
+                                const newMappings = essentialMappings.filter((_, i) => i !== index)
+                                setEssentialMappings(newMappings)
+                              }}
+                            >
+                              ❌
+                            </button>
+                          </div>
                         </div>
-                        <div className="column-select">
-                          <label>💰 Amount Column:</label>
-                          <select 
-                            value={columnMapping.companyAmountColumn}
-                            onChange={(e) => setColumnMapping( prev => ({
-                              ...prev,
-                              companyAmountColumn: e.target.value
-                            }))}
-                          >
-                            <option value="مدين">مدين</option>
-                            <option value="دائن">دائن</option>
-                          </select>
-                        </div>
-                        <div className="column-select">
-                          <label>🧾 Check Column:</label>
-                          <select 
-                            value={columnMapping.companyCheckColumn}
-                            onChange={(e) => setColumnMapping(prev => ({
-                              ...prev,
-                              companyCheckColumn: e.target.value
-                            }))}
-                          >
-                            <option value="رقم الشيك المستخرج">رقم الشيك المستخرج</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div className="bank-columns">
-                        <h5>Bank Data Columns</h5>
-                        <div className="column-select">
-                          <label>📅 Date Column:</label>
-                          <select 
-                            value={columnMapping.bankDateColumn}
-                            onChange={(e) => setColumnMapping(prev => ({
-                              ...prev,
-                              bankDateColumn: e.target.value
-                            }))}
-                          >
-                            {bankHeaders.map(header => (
-                              <option key={header} value={header}>{header}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="column-select">
-                          <label>💰 Amount Column:</label>
-                          <select 
-                            value={columnMapping.bankAmountColumn}
-                            onChange={(e) => setColumnMapping(prev => ({
-                              ...prev,
-                              bankAmountColumn: e.target.value
-                            }))}
-                          >
-                            {bankHeaders.map(header => (
-                              <option key={header} value={header}>{header}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="column-select">
-                          <label>🧾 Check Column:</label>
-                          <select 
-                            value={columnMapping.bankCheckColumn}
-                            onChange={(e) => setColumnMapping(prev => ({
-                              ...prev,
-                              bankCheckColumn: e.target.value
-                            }))}
-                          >
-                            {bankHeaders.map(header => (
-                              <option key={header} value={header}>{header}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
+                      ))}
+                      <button 
+                        className="add-button"
+                        onClick={() => {
+                          const newMapping = {
+                            id: `custom_${Date.now()}`,
+                            label: '🔧 New Column',
+                            companyColumn: '',
+                            bankColumn: '',
+                            icon: '🔧',
+                            optional: false
+                          }
+                          setEssentialMappings([...essentialMappings, newMapping])
+                        }}
+                      >
+                        ➕ Add Essential Column
+                      </button>
                     </div>
-                    
+
+                    {/* Custom Column Mappings */}
+                    <div className="custom-mappings-section">
+                      <h5>🔧 Custom Column Mappings</h5>
+                      {customMappings.map((mapping, index) => (
+                        <div key={mapping.id} className="custom-mapping-row">
+                          <div className="mapping-label-input">
+                            <input
+                              type="text"
+                              value={mapping.label}
+                              onChange={(e) => {
+                                const newMappings = [...customMappings]
+                                newMappings[index].label = e.target.value
+                                setCustomMappings(newMappings)
+                              }}
+                              placeholder="Column label"
+                            />
+                          </div>
+                          <div className="mapping-column-selects">
+                            <select
+                              value={mapping.companyColumn}
+                              onChange={(e) => {
+                                const newMappings = [...customMappings]
+                                newMappings[index].companyColumn = e.target.value
+                                setCustomMappings(newMappings)
+                              }}
+                            >
+                              <option value="">-- Select Company Column --</option>
+                              {companyHeaders.map(header => (
+                                <option key={header} value={header}>{header}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={mapping.bankColumn}
+                              onChange={(e) => {
+                                const newMappings = [...customMappings]
+                                newMappings[index].bankColumn = e.target.value
+                                setCustomMappings(newMappings)
+                              }}
+                            >
+                              <option value="">-- Select Bank Column --</option>
+                              {bankHeaders.map(header => (
+                                <option key={header} value={header}>{header}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="mapping-options">
+                            <button 
+                              className="remove-button"
+                              onClick={() => {
+                                const newMappings = customMappings.filter((_, i) => i !== index)
+                                setCustomMappings(newMappings)
+                              }}
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <button 
+                        className="add-button"
+                        onClick={() => {
+                          const newMapping = {
+                            id: `custom_${Date.now()}`,
+                            label: '🔧 New Custom Column',
+                            companyColumn: '',
+                            bankColumn: '',
+                            icon: '🔧'
+                          }
+                          setCustomMappings([...customMappings, newMapping])
+                        }}
+                      >
+                        ➕ Add Custom Column
+                      </button>
+                    </div>
+
+                    {/* Mapping Summary */}
                     <div className="mapping-summary">
-                      <h6>Current Mapping:</h6>
-                      <p>Company: {columnMapping.companyDateColumn} ↔ Bank: {columnMapping.bankDateColumn}</p>
-                      <p>Company: {columnMapping.companyAmountColumn} ↔ Bank: {columnMapping.bankAmountColumn}</p>
-                      <p>Company: {columnMapping.companyCheckColumn} ↔ Bank: {columnMapping.bankCheckColumn}</p>
+                      <h6>📋 Current Mapping Summary:</h6>
+                      {essentialMappings.map(mapping => (
+
+                        <p key={mapping.id}>
+                          {mapping.label}: {mapping.companyColumn || 'Not selected'} ↔ Bank: {mapping.bankColumn || 'Not selected'}
+                          {mapping.optional && ' (Optional)'}
+                        </p>
+                      ))}
+                      {customMappings.length > 0 && (
+                        <>
+                          <h6>Custom Mappings:</h6>
+                          {customMappings.map(mapping => (
+                            <p key={mapping.id}>
+                              {mapping.label}: {mapping.companyColumn || 'Not selected'} ↔ Bank: {mapping.bankColumn || 'Not selected'}
+                            </p>
+                          ))}
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1379,7 +1470,54 @@ function App() {
               </div>
             )}
 
-
+            {/* Bank Data Preview */}
+            {bankData.length > 0 && (
+              <div className="data-container">
+                <div className="table-header">
+                  <h3>📊 Bank Data Preview ({bankData.length} rows)</h3>
+                  <button 
+                    className="download-button"
+                    onClick={() => downloadAsExcel(
+                      bankDataFormatted, 
+                      bankHeaders, 
+                      'bank_data.xlsx'
+                    )}
+                  >
+                    📥 Download Excel
+                  </button>
+                </div>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {bankHeaders.map((header, index) => (
+                          <th key={index}>{header || `Column ${index + 1}`}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bankDataFormatted.slice(0, bankPreviewLimit).map((row, rowIndex) => (
+                        <tr key={rowIndex}>
+                          {bankHeaders.map((_, colIndex) => (
+                            <td key={colIndex}>
+                              {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {bankData.length > bankPreviewLimit && (
+                    <p className="preview-note">
+                      Showing first {bankPreviewLimit} of {bankData.length} rows
+                    </p>
+                  )}
+                </div>
+                <p className="data-note">
+                  Showing all {bankData.length} rows of bank data
+                </p>
+              </div>
+            )}
 
             {/* Bank Classified Data */}
             {bankClassifiedData.length > 0 && (
@@ -1428,48 +1566,6 @@ function App() {
             {/* Bank Remaining Data - hidden per request */}
           </div>
         </div>
-
-        {/* Classification Column Configuration */}
-        {(companyData.length > 0 || bankData.length > 0) && (
-          <div className="classification-columns-section">
-            <h4>🔍 Classification Column Configuration</h4>
-            <p>Choose which columns contain the text used for pattern matching:</p>
-            <div className="classification-columns-grid">
-              <div className="classification-column-input">
-                <label>Company Classification Column:</label>
-                <select 
-                  value={classificationColumns.companyColumn}
-                  onChange={(e) => setClassificationColumns(prev => ({
-                    ...prev,
-                    companyColumn: e.target.value
-                  }))}
-                >
-                  {companyHeaders.map(header => (
-                    <option key={header} value={header}>{header}</option>
-                  ))}
-                </select>
-                <small>Column where company patterns are matched</small>
-              </div>
-              <div className="classification-column-input">
-                <label>Bank Classification Column:</label>
-                <select 
-                  value={classificationColumns.bankColumn}
-                  onChange={(e) => setClassificationColumns(prev => ({
-                    ...prev,
-                    bankColumn: e.target.value
-                  }))}
-                >
-                  <option value="">-- Select Bank Column --</option>
-                  {bankHeaders.map(header => (
-                    <option key={header} value={header}>{header}</option>
-                  ))}
-                </select>
-                <small>Column where bank patterns are matched</small>
-              </div>
-            </div>
-          </div>
-        )}
-
 
         {/* Checks Collection Reconciliation Section */}
         {(companyClassifiedData.length > 0 || bankClassifiedData.length > 0) && (
