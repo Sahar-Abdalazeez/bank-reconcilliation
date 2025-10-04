@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import './App.css'
 import './header-accordion.css'
@@ -22,16 +22,146 @@ function App() {
   // Preview limits for large files
   const PREVIEW_ROW_LIMIT = 500
   const LOAD_MORE_STEP = 1000
+  
+  // Classification types configuration
+  const classificationTypes = {
+    'checks-collection': {
+      name: 'Checks Collection',
+      icon: '🏦',
+      companyPatterns: [
+        'اعادة ايداع شيك راجع',
+        'ايداع شيكات مقاصة',
+        'و ذلك عن تحصيل شيك'
+      ],
+      bankPatterns: [
+        'CHECK DEPOSIT',
+        'CLEAR. DEPO.',
+        'INTERNAL CLEARING'
+      ]
+    },
+    'returned-checks': {
+      name: 'Returned Checks',
+      icon: '📊',
+      companyPatterns: [
+        'شيك راجع',
+        'ارجاع شيك بعد اعادة ايداعه',
+      ],
+      bankPatterns: [
+        'RETURN CHEQUE , TRANSIT',
+        'RETURNED CHECK FROM OTHER BANK',
+        'RETURNED POST DATED/INSTALLMENT CHEQUES'
+      ]
+    },
+    'disbursement': {
+      name: 'Disbursement',
+      icon: '💼',
+      companyPatterns: [
+        'سند صرف',
+        'دفعة أدعاء',
+      ],
+      bankPatterns: [
+        'CLEARING WITHDRAWAL',
+        'SWIFT TRANSFER',
+        'TRANSFER FROM AN ACCOUNT TO AN ACCOUNT'
+      ]
+    },
+    'type-4': {
+      name: 'Type 4 Classification',
+      icon: '🔍',
+      companyPatterns: [
+        'placeholder pattern 1',
+        'placeholder pattern 2',
+        'placeholder pattern 3'
+      ],
+      bankPatterns: [
+        'placeholder pattern A',
+        'placeholder pattern B',
+        'placeholder pattern C'
+      ]
+    },
+    'type-5': {
+      name: 'Type 5 Classification',
+      icon: '⚡',
+      companyPatterns: [
+        'placeholder pattern 1',
+        'placeholder pattern 2',
+        'placeholder pattern 3'
+      ],
+      bankPatterns: [
+        'placeholder pattern A',
+        'placeholder pattern B',
+        'placeholder pattern C'
+      ]
+    }
+  }
+  
   const [companyPreviewLimit, setCompanyPreviewLimit] = useState(PREVIEW_ROW_LIMIT)
   const [bankPreviewLimit, setBankPreviewLimit] = useState(PREVIEW_ROW_LIMIT)
   
   // Classification state
   const [companyClassifiedData, setCompanyClassifiedData] = useState([])
   const [bankClassifiedData, setBankClassifiedData] = useState([])
+  const [selectedClassificationType, setSelectedClassificationType] = useState('returned-checks')
 
-  
   // Checks Collection Reconciliation results
   const [checksCollectionResults, setChecksCollectionResults] = useState(null)
+  const [reconciliationInProgress, setReconciliationInProgress] = useState(false)
+  
+  // Editable rules state
+  const [editableRules, setEditableRules] = useState(classificationTypes)
+  const [isEditingRules, setIsEditingRules] = useState(false)
+  
+  // Drag over states
+  const [companyDragOver, setCompanyDragOver] = useState(false)
+  const [bankDragOver, setBankDragOver] = useState(false)
+
+  // Dynamic column mapping for reconciliation
+  const [columnMapping, setColumnMapping] = useState({
+    companyDateColumn: 'التاريخ',
+    companyAmountColumn: 'مدين',
+    companyCheckColumn: 'رقم الشيك المستخرج',
+    bankDateColumn: '',
+    bankAmountColumn: '',
+    bankCheckColumn: ''
+  })
+
+  // Essential column mappings (editable)
+  const [essentialMappings, setEssentialMappings] = useState([
+    { id: 'amount', label: '💰 Amount Column', companyColumn: 'مدين', bankColumn: '', icon: '💰' },
+    { id: 'check', label: '🧾 Check Column', companyColumn: 'رقم الشيك المستخرج', bankColumn: '', icon: '🧾' },
+    { id: 'date', label: '📅 Date Column (Optional)', companyColumn: 'التاريخ', bankColumn: '', icon: '📅', optional: true }
+  ])
+
+  // Classification column configuration
+  const [classificationColumns, setClassificationColumns] = useState({
+    companyColumn: 'البيان',
+    bankColumn: '' // Will be auto-detected
+  })
+
+  const [showColumnMapping, setShowColumnMapping] = useState(false)
+
+  // Progress state for reconciliation
+  const [reconciliationProgress, setReconciliationProgress] = useState({
+    processed: 0,
+    total: 0,
+    percentage: 0
+  })
+
+  // Auto-detect bank columns when bank data loads
+  useEffect(() => {
+    if (bankHeaders.length > 0) {
+      const detectedColumns = {
+        bankDateColumn: bankHeaders.find(h => h && h.toString().toLowerCase().includes('post') && h.toString().toLowerCase().includes('date')) || '',
+        bankAmountColumn: bankHeaders.find(h => h && h.toString().toLowerCase().includes('credit')) || '',
+        bankCheckColumn: bankHeaders.find(h => h && h.toString().toLowerCase().includes('doc-num')) || ''
+      }
+      
+      setColumnMapping(prev => ({
+        ...prev,
+        ...detectedColumns
+      }))
+    }
+  }, [bankHeaders])
 
   // Helpers and classification (defined before use)
   const getBankNarrativeIndex = useCallback((headers) => {
@@ -43,24 +173,22 @@ function App() {
     })
   }, [])
 
-  const classifyCompanyData = useCallback((data, headers) => {
+  const classifyCompanyData = useCallback((data, headers, classificationType = 'checks-collection') => {
+    console.log('🔍 Company classification:', classificationType)
     const البيانIndex = headers.findIndex(header => header === 'البيان')
     if (البيانIndex === -1) {
+      console.log('❌ No البيان column found')
       return { classified: [], remaining: data }
     }
 
-    const classificationPatterns = [
-      'اعادة ايداع شيك راجع',
-      'ايداع شيكات مقاصة', 
-      'و ذلك عن تحصيل شيك'
-    ]
-
+    const patterns = editableRules[classificationType]?.companyPatterns || []
+    console.log('📋 Company patterns:', patterns)
     const classified = []
     const remaining = []
 
     data.forEach(row => {
       const البيانValue = row[البيانIndex]
-      const shouldClassify = البيانValue && classificationPatterns.some(pattern => 
+      const shouldClassify = البيانValue && patterns.some(pattern =>
         البيانValue.toString().includes(pattern)
       )
 
@@ -72,26 +200,21 @@ function App() {
     })
 
     return { classified, remaining }
-  }, [])
+  }, [editableRules])
 
-  const classifyBankData = useCallback((data, headers) => {
+  const classifyBankData = useCallback((data, headers, classificationType = 'checks-collection') => {
+    console.log('🔍 Bank classification:', classificationType)
     const narrativeIndex = getBankNarrativeIndex(headers)
     if (narrativeIndex === -1) {
+      console.log('❌ No narrative column found')
       return { classified: [], remaining: data }
     }
 
+    const patterns = editableRules[classificationType]?.bankPatterns || []
+    console.log('📋 Bank patterns:', patterns)
     const normalizeText = (text) => text.toString().toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim()
-    const classificationPatterns = [
-      'check deposit',
-      'cheque deposit',
-      'clear depo',
-      'clear depo',
-      'clearing deposit',
-      'internal clearing',
-      'int clearing',
-      'internal clearing transfer'
-    ].map(normalizeText)
-    const exactPhrases = ['check deposit', 'clear. depo.', 'internal clearing']
+    const normalizedPatterns = patterns.map(normalizeText)
+    const exactPhrases = patterns.filter(p => p.includes('.') || p.includes(' '))
 
     const classified = []
     const remaining = []
@@ -100,10 +223,10 @@ function App() {
       const narrativeValue = row[narrativeIndex]
       const raw = narrativeValue ? narrativeValue.toString().toLowerCase() : ''
       const text = narrativeValue ? normalizeText(narrativeValue) : ''
-      const containsClearDepo = text.includes('clear') && (text.includes('depo') || text.includes('deposit'))
-      const exactMatch = raw && exactPhrases.some(p => raw.includes(p))
-      const normalizedMatch = text && classificationPatterns.some(pattern => text.includes(pattern))
-      const shouldClassify = exactMatch || normalizedMatch || containsClearDepo
+      
+      const exactMatch = raw && exactPhrases.some(p => raw.includes(p.toLowerCase()))
+      const normalizedMatch = text && normalizedPatterns.some(pattern => text.includes(pattern))
+      const shouldClassify = exactMatch || normalizedMatch
 
       if (shouldClassify) {
         classified.push(row)
@@ -113,11 +236,82 @@ function App() {
     })
 
     return { classified, remaining }
-  }, [getBankNarrativeIndex])
+  }, [getBankNarrativeIndex, editableRules])
   
-  // Drag over states
-  const [companyDragOver, setCompanyDragOver] = useState(false)
-  const [bankDragOver, setBankDragOver] = useState(false)
+  // Handle classification type change
+  const handleClassificationTypeChange = useCallback((type) => {
+    setSelectedClassificationType(type)
+    
+    // Re-classify data with new type
+    if (companyData.length > 0) {
+      const { classified } = classifyCompanyData(companyData, companyHeaders, type)
+      setCompanyClassifiedData(classified)
+    }
+    
+    if (bankData.length > 0) {
+      const { classified } = classifyBankData(bankData, bankHeaders, type)
+      setBankClassifiedData(classified)
+    }
+    
+    // Clear reconciliation results when changing classification type
+    setChecksCollectionResults(null)
+  }, [companyData, companyHeaders, bankData, bankHeaders, classifyCompanyData, classifyBankData])
+
+  // Handle rule editing
+  const updateRule = useCallback((classificationType, dataType, index, newValue) => {
+    setEditableRules(prev => ({
+      ...prev,
+      [classificationType]: {
+        ...prev[classificationType],
+        [`${dataType}Patterns`]: prev[classificationType][`${dataType}Patterns`].map((pattern, i) => 
+          i === index ? newValue : pattern
+        )
+      }
+    }))
+  }, [])
+
+  const addRule = useCallback((classificationType, dataType) => {
+    setEditableRules(prev => ({
+      ...prev,
+      [classificationType]: {
+        ...prev[classificationType],
+        [`${dataType}Patterns`]: [...prev[classificationType][`${dataType}Patterns`], '']
+      }
+    }))
+  }, [])
+
+  const removeRule = useCallback((classificationType, dataType, index) => {
+    setEditableRules(prev => ({
+      ...prev,
+      [classificationType]: {
+        ...prev[classificationType],
+        [`${dataType}Patterns`]: prev[classificationType][`${dataType}Patterns`].filter((_, i) => i !== index)
+      }
+    }))
+  }, [])
+
+  const saveRules = useCallback(() => {
+    console.log('🔧 SAVING RULES - Re-classifying data with updated patterns')
+    console.log('Current type:', selectedClassificationType)
+    console.log('Current patterns:', editableRules[selectedClassificationType])
+    
+    // Re-classify data with updated rules
+    if (companyData.length > 0) {
+      const { classified } = classifyCompanyData(companyData, companyHeaders, selectedClassificationType)
+      console.log('✅ Company re-classification:', classified.length, 'rows')
+      setCompanyClassifiedData(classified)
+    }
+    
+    if (bankData.length > 0) {
+      const { classified } = classifyBankData(bankData, bankHeaders, selectedClassificationType)
+      console.log('✅ Bank re-classification:', classified.length, 'rows')
+      setBankClassifiedData(classified)
+    }
+    
+    setIsEditingRules(false)
+    setChecksCollectionResults(null)
+    console.log('🎉 Rules saved and data updated!')
+  }, [companyData, companyHeaders, bankData, bankHeaders, selectedClassificationType, classifyCompanyData, classifyBankData, editableRules])
 
   const processFile = useCallback((file, type) => {
     const isCompany = type === 'company'
@@ -163,7 +357,7 @@ function App() {
           setCompanyPreviewLimit(PREVIEW_ROW_LIMIT)
           
           // Classify company data
-          const companyClassification = classifyCompanyData(rows, headerRow || [])
+          const companyClassification = classifyCompanyData(rows, headerRow || [], selectedClassificationType)
           setCompanyClassifiedData(companyClassification.classified)
           // Remaining data not displayed per request
           
@@ -174,7 +368,7 @@ function App() {
           setBankPreviewLimit(PREVIEW_ROW_LIMIT)
           
           // Classify bank data
-          const bankClassification = classifyBankData(rows, headerRow || [])
+          const bankClassification = classifyBankData(rows, headerRow || [], selectedClassificationType)
           setBankClassifiedData(bankClassification.classified)
           // Remaining data not displayed per request
           
@@ -205,7 +399,7 @@ function App() {
     }
     
     reader.readAsArrayBuffer(file)
-  }, [companyLoading, bankLoading, classifyCompanyData, classifyBankData])
+  }, [companyLoading, bankLoading, classifyCompanyData, classifyBankData, selectedClassificationType])
 
   const handleDrop = useCallback((e, type) => {
     e.preventDefault()
@@ -410,7 +604,7 @@ function App() {
   
 
   // Helper function to parse date and check if bank date is within 4 days after company date
-  const isDateMatch = (companyDate, bankDate) => {
+  const isDateMatch = useCallback((companyDate, bankDate) => {
     if (!companyDate || !bankDate) return false
     
     try {
@@ -445,47 +639,29 @@ function App() {
     } catch {
       return false
     }
-  }
+  }, [])
 
-  // Match Checks Collection data (classified company vs classified bank)
-  const matchChecksCollection = () => {
-    if (formattedCompanyClassifiedWithChecks.length === 0 || bankClassifiedDataFormatted.length === 0) {
-      return {
-        matchedCompany: [],
-        unmatchedCompany: [],
-        matchedBank: [],
-        unmatchedBank: [],
-        reviewCompany: [],
-        reviewBank: []
-      }
-    }
+  // Legacy matchChecksCollection function replaced with performAsyncReconciliation for better performance
 
-    // Find column indices
-    const companyDateIndex = companyHeaders.findIndex(header => 
-      header === 'التاريخ' || header === 'تاريخ الادخال'
-    )
-    const companyCheckIndex = companyHeadersWithChecks.length - 1 // Last column is check number
-    const companyDebitIndex = companyHeaders.findIndex(header => header === 'مدين')
+  // Perform async reconciliation in chunks
+  const performAsyncReconciliation = useCallback(async () => {
+    console.log('🔄 Starting async reconciliation process...')
     
-    const bankPostDateIndex = bankHeaders.findIndex(header => 
-      header && header.toString().toLowerCase().includes('post') && 
-      header.toString().toLowerCase().includes('date')
+    // Get formatted data with checks
+    const formattedCompanyData = formatCompanyData(
+      extractCheckNumbers(companyClassifiedData, companyHeaders), 
+      [...companyHeaders, 'رقم الشيك المستخرج']
     )
-    const bankDocNumIndex = bankHeaders.findIndex(header => 
-      header && header.toString().toLowerCase().includes('doc-num')
-    )
-    const bankCreditIndex = bankHeaders.findIndex(header => 
-      header && header.toString().toLowerCase().includes('credit')
-    )
-
-    console.log('Checks Collection Debug:', {
-      companyDateIndex,
-      companyCheckIndex,
-      companyDebitIndex,
-      bankPostDateIndex,
-      bankDocNumIndex,
-      bankCreditIndex
-    })
+    const formattedBankData = formatBankData(bankClassifiedData, bankHeaders)
+    
+    // Find column indices dynamically
+    const companyDateIndex = [...companyHeaders, 'رقم الشيك المستخرج'].indexOf(columnMapping.companyDateColumn)
+    const companyCheckIndex = [...companyHeaders, 'رقم الشيك المستخرج'].indexOf(columnMapping.companyCheckColumn)
+    const companyDebitIndex = [...companyHeaders, 'رقم الشيك المستخرج'].indexOf(columnMapping.companyAmountColumn)
+    
+    const bankPostDateIndex = bankHeaders.indexOf(columnMapping.bankDateColumn)
+    const bankDocNumIndex = bankHeaders.indexOf(columnMapping.bankCheckColumn)
+    const bankCreditIndex = bankHeaders.indexOf(columnMapping.bankAmountColumn)
 
     const matchedCompany = []
     const unmatchedCompany = []
@@ -494,91 +670,104 @@ function App() {
     const reviewCompany = []
     const reviewBank = []
 
-    // Check each classified company transaction
-    formattedCompanyClassifiedWithChecks.forEach((companyRow, index) => {
-      const companyDate = companyRow[companyDateIndex]
-      const companyCheckNumber = companyRow[companyCheckIndex]
-      const companyDebitAmount = companyRow[companyDebitIndex]
-      
-      console.log(`Company row ${index}: date="${companyDate}", check="${companyCheckNumber}", debit="${companyDebitAmount}"`)
-      
-      if (!companyDate || !companyCheckNumber || !companyDebitAmount) {
-        unmatchedCompany.push(companyRow)
-        return
-      }
+    // Process company data in chunks
+    const chunkSize = 50 // Process 50 rows at a time
+    const companyChunks = []
+    for (let i = 0; i < formattedCompanyData.length; i += chunkSize) {
+      companyChunks.push(formattedCompanyData.slice(i, i + chunkSize))
+    }
 
-      // Find matching bank entry - check for perfect match first
-      let matchingBank = bankClassifiedDataFormatted.find((bankRow, bankIndex) => {
-        const bankPostDate = bankRow[bankPostDateIndex]
-        const bankDocNum = bankRow[bankDocNumIndex]
-        const bankCreditAmount = bankRow[bankCreditIndex]
+    console.log(`📊 Processing ${formattedCompanyData.length} company rows in ${companyChunks.length} chunks of ${chunkSize}`)
+    
+    // Initialize progress
+    setReconciliationProgress({
+      processed: 0,
+      total: formattedCompanyData.length,
+      percentage: 0
+    })
+    
+    for (let chunkIndex = 0; chunkIndex < companyChunks.length; chunkIndex++) {
+      const chunk = companyChunks[chunkIndex]
+      
+      for (const companyRow of chunk) {
+        const companyDate = companyRow[companyDateIndex]
+        const companyCheckNumber = companyRow[companyCheckIndex]
+        const companyDebitAmount = companyRow[companyDebitIndex]
         
-        console.log(`  Checking bank row ${bankIndex}: postDate="${bankPostDate}", docNum="${bankDocNum}", credit="${bankCreditAmount}"`)
-        
-        // Check all three criteria for perfect match
-        const dateMatch = isDateMatch(companyDate, bankPostDate)
-        const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
-        const amountMatch = bankCreditAmount && companyDebitAmount && 
-               Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
-        
-        console.log(`    Date match: ${dateMatch}, Check match: ${checkMatch}, Amount match: ${amountMatch}`)
-        
-        return dateMatch && checkMatch && amountMatch
-      })
-
-      if (matchingBank) {
-        console.log(`  ✅ PERFECT MATCH FOUND for check ${companyCheckNumber}`)
-        matchedCompany.push(companyRow)
-        if (!matchedBank.find(row => row === matchingBank)) {
-          matchedBank.push(matchingBank)
+        if (!companyDate || !companyCheckNumber || !companyDebitAmount) {
+          unmatchedCompany.push(companyRow)
+          continue
         }
-      } else {
-        // Check for review match (check number + amount match, but date mismatch)
-        const reviewBankMatch = bankClassifiedDataFormatted.find((bankRow) => {
+
+        // Find matching bank entry
+        let matchingBank = formattedBankData.find(bankRow => {
           const bankPostDate = bankRow[bankPostDateIndex]
           const bankDocNum = bankRow[bankDocNumIndex]
           const bankCreditAmount = bankRow[bankCreditIndex]
           
+          const dateMatch = isDateMatch(companyDate, bankPostDate)
           const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
           const amountMatch = bankCreditAmount && companyDebitAmount && 
                  Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
           
-          // Check if dates exist but don't match (outside tolerance)
-          const hasDates = companyDate && bankPostDate
-          const dateMismatch = hasDates && !isDateMatch(companyDate, bankPostDate)
-          
-          return checkMatch && amountMatch && dateMismatch
+          return dateMatch && checkMatch && amountMatch
         })
 
-        if (reviewBankMatch) {
-          console.log(`  ⚠️ REVIEW MATCH FOUND for check ${companyCheckNumber} (date mismatch)`)
-          reviewCompany.push(companyRow)
-          if (!reviewBank.find(row => row === reviewBankMatch)) {
-            reviewBank.push(reviewBankMatch)
+        if (matchingBank) {
+          matchedCompany.push(companyRow)
+          if (!matchedBank.find(row => row === matchingBank)) {
+            matchedBank.push(matchingBank)
           }
         } else {
-          console.log(`  ❌ NO MATCH for check ${companyCheckNumber}`)
-          unmatchedCompany.push(companyRow)
+          // Check for review match
+          const reviewBankMatch = formattedBankData.find(bankRow => {
+            const bankPostDate = bankRow[bankPostDateIndex]
+            const bankDocNum = bankRow[bankDocNumIndex]
+            const bankCreditAmount = bankRow[bankCreditIndex]
+            
+            const checkMatch = bankDocNum && bankDocNum.toString() === companyCheckNumber.toString()
+            const amountMatch = bankCreditAmount && companyDebitAmount && 
+                   Math.abs(parseFloat(companyDebitAmount) - parseFloat(bankCreditAmount)) < 0.01
+            
+            const hasDates = companyDate && bankPostDate
+            const dateMismatch = hasDates && !isDateMatch(companyDate, bankPostDate)
+            
+            return checkMatch && amountMatch && dateMismatch
+          })
+
+          if (reviewBankMatch) {
+            reviewCompany.push(companyRow)
+            if (!reviewBank.find(row => row === reviewBankMatch)) {
+              reviewBank.push(reviewBankMatch)
+            }
+          } else {
+            unmatchedCompany.push(companyRow)
+          }
         }
       }
-    })
+      
+      // Update progress
+      const processed = Math.min((chunkIndex + 1) * chunkSize, formattedCompanyData.length)
+      setReconciliationProgress({
+        processed,
+        total: formattedCompanyData.length,
+        percentage: Math.round((processed / formattedCompanyData.length) * 100)
+      })
+      
+      // Yield control after each chunk
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
 
     // Add unmatched bank entries
-    bankClassifiedDataFormatted.forEach(bankRow => {
-      if (!matchedBank.find(row => row === bankRow) && !reviewBank.find(row => row === bankRow)) {
+    await new Promise(resolve => setTimeout(resolve, 10))
+    formattedBankData.forEach(bankRow => {
+      if (!matchedBank.find(row => row === bankRow) && !reviewBank.find(frame => frame === bankRow)) {
         unmatchedBank.push(bankRow)
       }
     })
 
-    console.log('Checks Collection Results:', {
-      matchedCompany: matchedCompany.length,
-      unmatchedCompany: unmatchedCompany.length,
-      matchedBank: matchedBank.length,
-      unmatchedBank: unmatchedBank.length,
-      reviewCompany: reviewCompany.length,
-      reviewBank: reviewBank.length
-    })
-
+    console.log(`✅ Reconciliation complete: ${matchedCompany.length} matched, ${unmatchedCompany.length} unmatched, ${reviewCompany.length} for review`)
+    
     return {
       matchedCompany,
       unmatchedCompany,
@@ -587,7 +776,46 @@ function App() {
       reviewCompany,
       reviewBank
     }
-  }
+  }, [companyClassifiedData, companyHeaders, bankClassifiedData, bankHeaders, formatCompanyData, extractCheckNumbers, formatBankData, isDateMatch, columnMapping, setReconciliationProgress])
+
+  // Run reconciliation with progress indicator and chunked processing
+  const runReconciliation = useCallback(async () => {
+    setReconciliationInProgress(true)
+    
+    try {
+      console.log('🚀 Starting reconciliation with async processing...')
+      
+      // Yield immediately to show loading state
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const results = await performAsyncReconciliation()
+      setChecksCollectionResults(results)
+      
+    } catch (error) {
+      console.error('❌ Reconciliation error:', error)
+      setChecksCollectionResults({
+        matchedCompany: [],
+        unmatchedCompany: [],
+        matchedBank: [],
+        unmatchedBank: [],
+        reviewCompany: [],
+        reviewBank: []
+      })
+    } finally {
+      setReconciliationInProgress(false)
+    }
+  }, [performAsyncReconciliation])
+
+  // Clear reconciliation results function
+  const clearReconciliationResults = useCallback(() => {
+    setChecksCollectionResults(null)
+    setReconciliationInProgress(false)
+    setReconciliationProgress({
+      processed: 0,
+      total: 0,
+      percentage: 0
+    })
+  }, [])
 
 
   // Compute some derived data with memo to avoid heavy recalculations on each render
@@ -640,7 +868,7 @@ function App() {
               </div>
             </div>
             <nav className="header-nav">
-              <div className="nav-item">
+              {/* <div className="nav-item">
                 <span className="nav-icon">📊</span>
                 <span>Data Processing</span>
               </div>
@@ -651,7 +879,7 @@ function App() {
               <div className="nav-item">
                 <span className="nav-icon">📈</span>
                 <span>Analytics</span>
-              </div>
+              </div> */}
             </nav>
           </div>
         </div>
@@ -663,6 +891,243 @@ function App() {
             <h2>Upload & Process Your Data</h2>
             <p>Upload company and bank Excel files separately (.xlsx, .xls) for automated reconciliation</p>
           </div>
+
+          {/* Classification Type Selector - Show only when both files are uploaded */}
+          {companyData.length > 0 && bankData.length > 0 && (
+            <div className="classification-selector">
+              <h3>🎯 Select Classification Type</h3>
+              <div className="classification-chips">
+                  {Object.entries(editableRules).map(([key, type]) => (
+                    <button
+                      key={key}
+                      className={`classification-chip ${selectedClassificationType === key ? 'active' : ''}`}
+                      onClick={() => handleClassificationTypeChange(key)}
+                    >
+                      <span className="chip-icon">{type.icon}</span>
+                      <span className="chip-name">{type.name}</span>
+                    </button>
+                  ))}
+              </div>
+              <div className="classification-info">
+                <div className="info-header">
+                  <p>
+                    <strong>Current Rules:</strong> {editableRules[selectedClassificationType].name}
+                  </p>
+                  <div className="edit-controls">
+                    <button 
+                      className="edit-rules-button"
+                      onClick={() => setIsEditingRules(!isEditingRules)}
+                    >
+                      {isEditingRules ? '📋 View Rules' : '✏️ Edit Rules'}
+                    </button>
+                    {isEditingRules && (
+                      <button 
+                        className="save-rules-button"
+                        onClick={saveRules}
+                      >
+                        💾 Save Changes
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {isEditingRules ? (
+                  <div className="rules-editor">
+                    <div className="company-rules-editor">
+                      <strong>Company Patterns:</strong>
+                      <div className="rule-inputs">
+                        {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
+                          <div key={index} className="rule-input-group">
+                            <input
+                              type="text"
+                              value={pattern}
+                              onChange={(e) => updateRule(selectedClassificationType, 'company', index, e.target.value)}
+                              className="rule-input"
+                              placeholder="Enter pattern..."
+                            />
+                            <button 
+                              className="remove-rule-button"
+                              onClick={() => removeRule(selectedClassificationType, 'company', index)}
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ))}
+                        <button 
+                          className="add-rule-button"
+                          onClick={() => addRule(selectedClassificationType, 'company')}
+                        >
+                          ➕ Add Pattern
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="bank-rules-editor">
+                      <strong>Bank Patterns:</strong>
+                      <div className="rule-inputs">
+                        {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
+                          <div key={index} className="rule-input-group">
+                            <input
+                              type="text"
+                              value={pattern}
+                              onChange={(e) => updateRule(selectedClassificationType, 'bank', index, e.target.value)}
+                              className="rule-input"
+                              placeholder="Enter pattern..."
+                            />
+                            <button 
+                              className="remove-rule-button"
+                              onClick={() => removeRule(selectedClassificationType, 'bank', index)}
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ))}
+                        <button 
+                          className="add-rule-button"
+                          onClick={() => addRule(selectedClassificationType, 'bank')}
+                        >
+                          ➕ Add Pattern
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rules-display">
+                    <div className="company-rules">
+                      <strong>Company Patterns:</strong>
+                      <ul>
+                        {editableRules[selectedClassificationType].companyPatterns.map((pattern, index) => (
+                          <li key={index}>{pattern}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bank-rules">
+                      <strong>Bank Patterns:</strong>
+                      <ul>
+                        {editableRules[selectedClassificationType].bankPatterns.map((pattern, index) => (
+                          <li key={index}>{pattern}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Column Mapping Section */}
+              <div className="column-mapping-section">
+                <div className="mapping-header">
+                  <h4>🎯 Column Header Mapping</h4>
+                  <button 
+                    className="toggle-mapping-button"
+                    onClick={() => setShowColumnMapping(!showColumnMapping)}
+                  >
+                    {showColumnMapping ? '📋 Hide Mapping' : '⚙️ Configure Columns'}
+                  </button>
+                </div>
+                
+                {showColumnMapping && (
+                  <div className="column-mapping">
+                    <div className="mapping-grid">
+                      <div className="company-columns">
+                        <h5>Company Data Columns</h5>
+                        <div className="column-select">
+                          <label>📅 Date Column:</label>
+                          <select 
+                            value={columnMapping.companyDateColumn}
+                            onChange={(e) => setColumnMapping(prev => ({
+                              ...prev,
+                              companyDateColumn: e.target.value
+                            }))}
+                          >
+                            <option value="التاريخ">التاريخ</option>
+                            <option value="تاريخ الادخال">تاريخ الادخال</option>
+                          </select>
+                        </div>
+                        <div className="column-select">
+                          <label>💰 Amount Column:</label>
+                          <select 
+                            value={columnMapping.companyAmountColumn}
+                            onChange={(e) => setColumnMapping( prev => ({
+                              ...prev,
+                              companyAmountColumn: e.target.value
+                            }))}
+                          >
+                            <option value="مدين">مدين</option>
+                            <option value="دائن">دائن</option>
+                          </select>
+                        </div>
+                        <div className="column-select">
+                          <label>🧾 Check Column:</label>
+                          <select 
+                            value={columnMapping.companyCheckColumn}
+                            onChange={(e) => setColumnMapping(prev => ({
+                              ...prev,
+                              companyCheckColumn: e.target.value
+                            }))}
+                          >
+                            <option value="رقم الشيك المستخرج">رقم الشيك المستخرج</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="bank-columns">
+                        <h5>Bank Data Columns</h5>
+                        <div className="column-select">
+                          <label>📅 Date Column:</label>
+                          <select 
+                            value={columnMapping.bankDateColumn}
+                            onChange={(e) => setColumnMapping(prev => ({
+                              ...prev,
+                              bankDateColumn: e.target.value
+                            }))}
+                          >
+                            {bankHeaders.map(header => (
+                              <option key={header} value={header}>{header}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="column-select">
+                          <label>💰 Amount Column:</label>
+                          <select 
+                            value={columnMapping.bankAmountColumn}
+                            onChange={(e) => setColumnMapping(prev => ({
+                              ...prev,
+                              bankAmountColumn: e.target.value
+                            }))}
+                          >
+                            {bankHeaders.map(header => (
+                              <option key={header} value={header}>{header}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="column-select">
+                          <label>🧾 Check Column:</label>
+                          <select 
+                            value={columnMapping.bankCheckColumn}
+                            onChange={(e) => setColumnMapping(prev => ({
+                              ...prev,
+                              bankCheckColumn: e.target.value
+                            }))}
+                          >
+                            {bankHeaders.map(header => (
+                              <option key={header} value={header}>{header}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mapping-summary">
+                      <h6>Current Mapping:</h6>
+                      <p>Company: {columnMapping.companyDateColumn} ↔ Bank: {columnMapping.bankDateColumn}</p>
+                      <p>Company: {columnMapping.companyAmountColumn} ↔ Bank: {columnMapping.bankAmountColumn}</p>
+                      <p>Company: {columnMapping.companyCheckColumn} ↔ Bank: {columnMapping.bankCheckColumn}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         
         {(companyData.length > 0 || bankData.length > 0) && (
           <div className="clear-all-container">
@@ -671,14 +1136,15 @@ function App() {
             </button>
           </div>
         )}
-        
-        <div className="upload-sections">
+          <div className="upload-sections">
           {/* Company Data Section */}
           <div className="upload-section company-section">
             <h2 className="section-title company-title">🏢 Company Data</h2>
             
-            <div 
-              className={`upload-area company-upload ${companyDragOver ? 'drag-over' : ''} ${companyLoading ? 'loading' : ''}`}
+            {/* Upload Area - Hidden when file is uploaded */}
+            {companyData.length === 0 && (
+              <div 
+                className={`upload-area company-upload ${companyDragOver ? 'drag-over' : ''} ${companyLoading ? ' loading ' : ''}`}
               onDrop={(e) => handleDrop(e, 'company')}
               onDragOver={(e) => handleDragOver(e, 'company')}
               onDragLeave={(e) => handleDragLeave(e, 'company')}
@@ -710,6 +1176,7 @@ function App() {
                 )}
               </div>
             </div>
+            )}
 
             {companyError && (
               <div className="error-message">
@@ -726,7 +1193,7 @@ function App() {
               </div>
             )}
 
-            {companyData.length > 0 && (
+            {/* {companyData.length > 0 && (
               <div className="data-container">
                 <div className="table-header">
                   <h3>📊 Company Data Preview ({companyData.length} rows)</h3>
@@ -765,7 +1232,7 @@ function App() {
                   Showing all {companyData.length} rows of company data with extracted check numbers
                 </p>
               </div>
-            )}
+            )} */}
 
             {/* Company Classified Data */}
             {companyClassifiedData.length > 0 && (
@@ -819,9 +1286,10 @@ function App() {
           {/* Bank Data Section */}
           <div className="upload-section bank-section">
             <h2 className="section-title bank-title">🏦 Bank Data</h2>
-            
-            <div 
-              className={`upload-area bank-upload ${bankDragOver ? 'drag-over' : ''} ${bankLoading ? 'loading' : ''}`}
+            {/* Upload Area - Hidden when file is uploaded */}
+            {bankData.length === 0 && (
+              <div 
+                className={`upload-area bank-upload ${bankDragOver ? 'drag-over' : ''} ${bankLoading ? 'loading' : ''}`}
               onDrop={(e) => handleDrop(e, 'bank')}
               onDragOver={(e) => handleDragOver(e, 'bank')}
               onDragLeave={(e) => handleDragLeave(e, 'bank')}
@@ -853,6 +1321,7 @@ function App() {
                 )}
               </div>
             </div>
+            )}
 
             {bankError && (
               <div className="error-message">
@@ -869,45 +1338,7 @@ function App() {
               </div>
             )}
 
-            {bankData.length > 0 && (
-              <div className="data-container">
-                <div className="table-header">
-                  <h3>🏦 Bank Data Preview ({bankData.length} rows)</h3>
-                  <button 
-                    className="download-button"
-                    onClick={() => downloadAsExcel(bankDataFormatted, bankHeaders, 'bank_data.xlsx')}
-                  >
-                    📥 Download Excel
-                  </button>
-                </div>
-                <div className="table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        {bankHeaders.map((header, index) => (
-                          <th key={index}>{header || `Column ${index + 1}`}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bankDataFormatted.map((row, rowIndex) => {
-                        return (
-                        <tr key={rowIndex}>
-                          {bankHeaders.map((_, colIndex) => (
-                            <td key={colIndex}>
-                              {row[colIndex] !== undefined && row[colIndex] !== null ? String(row[colIndex]) : ''}
-                            </td>
-                          ))}
-                        </tr>
-                      )})}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="data-note">
-                  Showing all {bankData.length} rows of bank data
-                </p>
-              </div>
-            )}
+
 
             {/* Bank Classified Data */}
             {bankClassifiedData.length > 0 && (
@@ -957,6 +1388,152 @@ function App() {
           </div>
         </div>
 
+        {/* Classification Column Configuration */}
+        {(companyData.length > 0 || bankData.length > 0) && (
+          <div className="classification-columns-section">
+            <h4>🔍 Classification Column Configuration</h4>
+            <p>Choose which columns contain the text used for pattern matching:</p>
+            <div className="classification-columns-grid">
+              <div className="classification-column-input">
+                <label>Company Classification Column:</label>
+                <select 
+                  value={classificationColumns.companyColumn}
+                  onChange={(e) => setClassificationColumns(prev => ({
+                    ...prev,
+                    companyColumn: e.target.value
+                  }))}
+                >
+                  {companyHeaders.map(header => (
+                    <option key={header} value={header}>{header}</option>
+                  ))}
+                </select>
+                <small>Column where company patterns are matched</small>
+              </div>
+              <div className="classification-column-input">
+                <label>Bank Classification Column:</label>
+                <select 
+                  value={classificationColumns.bankColumn}
+                  onChange={(e) => setClassificationColumns(prev => ({
+                    ...prev,
+                    bankColumn: e.target.value
+                  }))}
+                >
+                  <option value="">-- Select Bank Column --</option>
+                  {bankHeaders.map(header => (
+                    <option key={header} value={header}>{header}</option>
+                  ))}
+                </select>
+                <small>Column where bank patterns are matched</small>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Column Header Mapping Section */}
+        {(companyData.length > 0 || bankData.length > 0) && (
+          <div className="column-mapping-section">
+            <div className="mapping-header">
+              <h4>🎯 Column Header Mapping</h4>
+              <button 
+                className="toggle-mapping-button"
+                onClick={() => setShowColumnMapping(!showColumnMapping)}
+              >
+                {showColumnMapping ? '📋 Hide Mapping' : '⚙️ Configure Columns'}
+              </button>
+            </div>
+            
+            {showColumnMapping && (
+              <div className="column-mapping">
+                {/* Essential Column Mapping */}
+                <div className="essential-mappings">
+                  <div className="essential-mappings-header">
+                    <h5>🔧 Essential Columns (Required for matching)</h5>
+                    <button 
+                      className="add-mapping-button"
+                      onClick={() => setEssentialMappings(prev => [...prev, { 
+                        id: Date.now(), 
+                        label: '🔧 New Column', 
+                        companyColumn: '', 
+                        bankColumn: '', 
+                        icon: '🔧',
+                        optional: false
+                      }])}
+                    >
+                      ➕ Add Column
+                    </button>
+                  </div>
+                  {essentialMappings.map((mapping) => (
+                    <div key={mapping.id} className="essential-mapping-item">
+                      <div className="mapping-inputs">
+                        <div className="mapping-label-input">
+                          <label>Label:</label>
+                          <input
+                            type="text"
+                            value={mapping.label}
+                            onChange={(e) => setEssentialMappings(prev => 
+                              prev.map(m => m.id === mapping.id ? { ...m, label: e.target.value } : m)
+                            )}
+                            className="mapping-label-field"
+                          />
+                        </div>
+                        <div className="mapping-selections">
+                          <label>Company Column:</label>
+                          <select 
+                            value={mapping.companyColumn}
+                            onChange={(e) => setEssentialMappings(prev => 
+                              prev.map(m => m.id === mapping.id ? { ...m, companyColumn: e.target.value } : m)
+                            )}
+                          >
+                            <option value="">-- Select Company Column --</option>
+                            {companyHeaders.map(header => (
+                              <option key={header} value={header}>{header}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="mapping-selections">
+                          <label>Bank Column:</label>
+                          <select 
+                            value={mapping.bankColumn}
+                            onChange={(e) => setEssentialMappings(prev => 
+                              prev.map(m => m.id === mapping.id ? { ...m, bankColumn: e.target.value } : m)
+                            )}
+                          >
+                            <option value="">-- Select Bank Column --</option>
+                            {bankHeaders.map(header => (
+                              <option key={header} value={header}>{header}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="mapping-options">
+                          <label className="optional-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={mapping.optional}
+                              onChange={(e) => setEssentialMappings(prev => 
+                                prev.map(m => m.id === mapping.id ? { ...m, optional: e.target.checked } : m)
+                              )}
+                            />
+                            Optional
+                          </label>
+                          {essentialMappings.length > 1 && (
+                            <button 
+                              className="remove-mapping-button"
+                              onClick={() => setEssentialMappings(prev => 
+                                prev.filter(m => m.id !== mapping.id)
+                              )}
+                            >
+                              ❌ Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Checks Collection Reconciliation Section */}
         {(companyClassifiedData.length > 0 || bankClassifiedData.length > 0) && (
@@ -967,12 +1544,37 @@ function App() {
                 <div className="reconciliation-content">
                   {!checksCollectionResults && (
                     <div className="table-header">
-                      <h4>Run Checks Collection Reconciliation to match classified data.</h4>
+                      <h4>Run {editableRules[selectedClassificationType].name} Reconciliation to match classified data.</h4>
                       <button 
-                        className="download-button run-button"
-                        onClick={() => setChecksCollectionResults(matchChecksCollection())}
+                        className={`download-button run-button ${reconciliationInProgress ? 'loading' : ''}`}
+                        onClick={runReconciliation}
+                        disabled={reconciliationInProgress}
                       >
-                        ▶ Run Checks Collection Reconciliation
+                        {reconciliationInProgress ? (
+                          <div className="reconciliation-loading">
+                            <div className="loading-spinner">⏳</div>
+                            <div className="loading-text">
+                              <p>Processing...</p>
+                              <div className="progress-info">
+                                {reconciliationProgress.total > 0 && (
+                                  <>
+                                    <p>{reconciliationProgress.processed} / {reconciliationProgress.total} rows processed ({reconciliationProgress.percentage}%)</p>
+                                    <div className="progress-bar">
+                                      <div 
+                                        className="progress-fill" 
+                                        style={{ width: `${reconciliationProgress.percentage}%` }}
+                                      ></div>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            ▶ Run {editableRules[selectedClassificationType].name} Reconciliation
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
@@ -1018,6 +1620,32 @@ function App() {
             ) : (
               <div className="reconciliation-placeholder">
                 <p>📁 Upload and classify both company and bank data files to start checks collection reconciliation</p>
+              </div>
+            )}
+            
+            {/* Re-run Reconciliation Button */}
+            {checksCollectionResults && (
+              <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <button 
+                  className="download-button"
+                  onClick={runReconciliation}
+                  disabled={reconciliationInProgress}
+                >
+                  {reconciliationInProgress ? '⏳ Re-running...' : '🔄 Re-run Reconciliation'}
+                </button>
+              </div>
+            )}
+            
+            {/* Re-run Reconciliation Button */}
+            {checksCollectionResults && (
+              <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <button 
+                  className="download-button"
+                  onClick={runReconciliation}
+                  disabled={reconciliationInProgress}
+                >
+                  {reconciliationInProgress ? '⏳ Re-running...' : '🔄 Re-run Reconciliation'}
+                </button>
               </div>
             )}
 
