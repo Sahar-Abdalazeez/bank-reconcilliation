@@ -1098,7 +1098,7 @@ function App() {
                               }}
                             >
                               <option value="">-- Select Company Column --</option>
-                              {companyHeaders.map(header => (
+                              {[...companyHeaders, 'رقم الشيك المستخرج'].map(header => (
                                 <option key={header} value={header}>{header}</option>
                               ))}
                             </select>
@@ -1186,7 +1186,7 @@ function App() {
                               }}
                             >
                               <option value="">-- Select Company Column --</option>
-                              {companyHeaders.map(header => (
+                              {[...companyHeaders, 'رقم الشيك المستخرج'].map(header => (
                                 <option key={header} value={header}>{header}</option>
                               ))}
                             </select>
