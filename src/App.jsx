@@ -175,9 +175,9 @@ function App() {
 
   const classifyCompanyData = useCallback((data, headers, classificationType = 'checks-collection') => {
     console.log('🔍 Company classification:', classificationType)
-    const البيانIndex = headers.findIndex(header => header === 'البيان')
-    if (البيانIndex === -1) {
-      console.log('❌ No البيان column found')
+    const classificationColumnIndex = headers.findIndex(header => header === classificationColumns.companyColumn)
+    if (classificationColumnIndex === -1) {
+      console.log(`❌ Classification column '${classificationColumns.companyColumn}' not found`)
       return { classified: [], remaining: data }
     }
 
@@ -187,9 +187,9 @@ function App() {
     const remaining = []
 
     data.forEach(row => {
-      const البيانValue = row[البيانIndex]
-      const shouldClassify = البيانValue && patterns.some(pattern =>
-        البيانValue.toString().includes(pattern)
+      const classificationValue = row[classificationColumnIndex]
+      const shouldClassify = classificationValue && patterns.some(pattern =>
+        classificationValue.toString().includes(pattern)
       )
 
       if (shouldClassify) {
@@ -200,13 +200,15 @@ function App() {
     })
 
     return { classified, remaining }
-  }, [editableRules])
+  }, [editableRules, classificationColumns])
 
-  const classifyBankData = useCallback((data, headers, classificationType = 'checks-collection') => {
+  const classifyBankData = useCallback((data, headers, classificationType = 'returned-checks') => {
     console.log('🔍 Bank classification:', classificationType)
-    const narrativeIndex = getBankNarrativeIndex(headers)
-    if (narrativeIndex === -1) {
-      console.log('❌ No narrative column found')
+    console.log('🎯 Using bank classification column:', classificationColumns.bankColumn)
+    
+    const bankClassificationColumnIndex = headers.findIndex(header => header === classificationColumns.bankColumn)
+    if (bankClassificationColumnIndex === -1) {
+      console.log(`❌ Bank classification column '${classificationColumns.bankColumn}' not found`)
       return { classified: [], remaining: data }
     }
 
@@ -220,9 +222,9 @@ function App() {
     const remaining = []
 
     data.forEach(row => {
-      const narrativeValue = row[narrativeIndex]
-      const raw = narrativeValue ? narrativeValue.toString().toLowerCase() : ''
-      const text = narrativeValue ? normalizeText(narrativeValue) : ''
+      const classificationValue = row[bankClassificationColumnIndex]
+      const raw = classificationValue ? classificationValue.toString().toLowerCase() : ''
+      const text = classificationValue ? normalizeText(classificationValue) : ''
       
       const exactMatch = raw && exactPhrases.some(p => raw.includes(p.toLowerCase()))
       const normalizedMatch = text && normalizedPatterns.some(pattern => text.includes(pattern))
@@ -236,7 +238,7 @@ function App() {
     })
 
     return { classified, remaining }
-  }, [getBankNarrativeIndex, editableRules])
+  }, [editableRules, classificationColumns])
   
   // Handle classification type change
   const handleClassificationTypeChange = useCallback((type) => {
@@ -1532,6 +1534,47 @@ function App() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Classification Column Configuration */}
+        {(companyData.length > 0 || bankData.length > 0) && (
+          <div className="classification-columns-section">
+            <h4>🔍 Classification Column Configuration</h4>
+            <p>Choose which columns contain the text used for pattern matching:</p>
+            <div className="classification-columns-grid">
+              <div className="classification-column-input">
+                <label>Company Classification Column:</label>
+                <select 
+                  value={classificationColumns.companyColumn}
+                  onChange={(e) => setClassificationColumns(prev => ({
+                    ...prev,
+                    companyColumn: e.target.value
+                  }))}
+                >
+                  {companyHeaders.map(header => (
+                    <option key={header} value={header}>{header}</option>
+                  ))}
+                </select>
+                <small>Column where company patterns are matched</small>
+              </div>
+              <div className="classification-column-input">
+                <label>Bank Classification Column:</label>
+                <select 
+                  value={classificationColumns.bankColumn}
+                  onChange={(e) => setClassificationColumns(prev => ({
+                    ...prev,
+                    bankColumn: e.target.value
+                  }))}
+                >
+                  <option value="">-- Select Bank Column --</option>
+                  {bankHeaders.map(header => (
+                    <option key={header} value={header}>{header}</option>
+                  ))}
+                </select>
+                <small>Column where bank patterns are matched</small>
+              </div>
+            </div>
           </div>
         )}
 
