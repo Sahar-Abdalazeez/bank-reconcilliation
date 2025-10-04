@@ -1015,6 +1015,45 @@ function App() {
                 )}
               </div>
 
+              {/* Classification Column Configuration */}
+              <div className="classification-columns-config">
+                <h4>🔍 Classification Column Configuration</h4>
+                <p>Choose which columns contain the text used for pattern matching:</p>
+                <div className="classification-columns-grid">
+                  <div className="classification-column-input">
+                    <label>Company Classification Column:</label>
+                    <select 
+                      value={classificationColumns.companyColumn}
+                      onChange={(e) => setClassificationColumns(prev => ({
+                        ...prev,
+                        companyColumn: e.target.value
+                      }))}
+                    >
+                      {companyHeaders.map(header => (
+                        <option key={header} value={header}>{header}</option>
+                      ))}
+                    </select>
+                    <small>Column where company patterns are matched</small>
+                  </div>
+                  <div className="classification-column-input">
+                    <label>Bank Classification Column:</label>
+                    <select 
+                      value={classificationColumns.bankColumn}
+                      onChange={(e) => setClassificationColumns(prev => ({
+                        ...prev,
+                        bankColumn: e.target.value
+                      }))}
+                    >
+                      <option value="">-- Select Bank Column --</option>
+                      {bankHeaders.map(header => (
+                        <option key={header} value={header}>{header}</option>
+                      ))}
+                    </select>
+                    <small>Column where bank patterns are matched</small>
+                  </div>
+                </div>
+              </div>
+
               {/* Column Mapping Section */}
               <div className="column-mapping-section">
                 <div className="mapping-header">
@@ -1431,152 +1470,6 @@ function App() {
           </div>
         )}
 
-        {/* Column Header Mapping Section */}
-        {(companyData.length > 0 || bankData.length > 0) && (
-          <div className="column-mapping-section">
-            <div className="mapping-header">
-              <h4>🎯 Column Header Mapping</h4>
-              <button 
-                className="toggle-mapping-button"
-                onClick={() => setShowColumnMapping(!showColumnMapping)}
-              >
-                {showColumnMapping ? '📋 Hide Mapping' : '⚙️ Configure Columns'}
-              </button>
-            </div>
-            
-            {showColumnMapping && (
-              <div className="column-mapping">
-                {/* Essential Column Mapping */}
-                <div className="essential-mappings">
-                  <div className="essential-mappings-header">
-                    <h5>🔧 Essential Columns (Required for matching)</h5>
-                    <button 
-                      className="add-mapping-button"
-                      onClick={() => setEssentialMappings(prev => [...prev, { 
-                        id: Date.now(), 
-                        label: '🔧 New Column', 
-                        companyColumn: '', 
-                        bankColumn: '', 
-                        icon: '🔧',
-                        optional: false
-                      }])}
-                    >
-                      ➕ Add Column
-                    </button>
-                  </div>
-                  {essentialMappings.map((mapping) => (
-                    <div key={mapping.id} className="essential-mapping-item">
-                      <div className="mapping-inputs">
-                        <div className="mapping-label-input">
-                          <label>Label:</label>
-                          <input
-                            type="text"
-                            value={mapping.label}
-                            onChange={(e) => setEssentialMappings(prev => 
-                              prev.map(m => m.id === mapping.id ? { ...m, label: e.target.value } : m)
-                            )}
-                            className="mapping-label-field"
-                          />
-                        </div>
-                        <div className="mapping-selections">
-                          <label>Company Column:</label>
-                          <select 
-                            value={mapping.companyColumn}
-                            onChange={(e) => setEssentialMappings(prev => 
-                              prev.map(m => m.id === mapping.id ? { ...m, companyColumn: e.target.value } : m)
-                            )}
-                          >
-                            <option value="">-- Select Company Column --</option>
-                            {companyHeaders.map(header => (
-                              <option key={header} value={header}>{header}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="mapping-selections">
-                          <label>Bank Column:</label>
-                          <select 
-                            value={mapping.bankColumn}
-                            onChange={(e) => setEssentialMappings(prev => 
-                              prev.map(m => m.id === mapping.id ? { ...m, bankColumn: e.target.value } : m)
-                            )}
-                          >
-                            <option value="">-- Select Bank Column --</option>
-                            {bankHeaders.map(header => (
-                              <option key={header} value={header}>{header}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="mapping-options">
-                          <label className="optional-checkbox">
-                            <input
-                              type="checkbox"
-                              checked={mapping.optional}
-                              onChange={(e) => setEssentialMappings(prev => 
-                                prev.map(m => m.id === mapping.id ? { ...m, optional: e.target.checked } : m)
-                              )}
-                            />
-                            Optional
-                          </label>
-                          {essentialMappings.length > 1 && (
-                            <button 
-                              className="remove-mapping-button"
-                              onClick={() => setEssentialMappings(prev => 
-                                prev.filter(m => m.id !== mapping.id)
-                              )}
-                            >
-                              ❌ Remove
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Classification Column Configuration */}
-        {(companyData.length > 0 || bankData.length > 0) && (
-          <div className="classification-columns-section">
-            <h4>🔍 Classification Column Configuration</h4>
-            <p>Choose which columns contain the text used for pattern matching:</p>
-            <div className="classification-columns-grid">
-              <div className="classification-column-input">
-                <label>Company Classification Column:</label>
-                <select 
-                  value={classificationColumns.companyColumn}
-                  onChange={(e) => setClassificationColumns(prev => ({
-                    ...prev,
-                    companyColumn: e.target.value
-                  }))}
-                >
-                  {companyHeaders.map(header => (
-                    <option key={header} value={header}>{header}</option>
-                  ))}
-                </select>
-                <small>Column where company patterns are matched</small>
-              </div>
-              <div className="classification-column-input">
-                <label>Bank Classification Column:</label>
-                <select 
-                  value={classificationColumns.bankColumn}
-                  onChange={(e) => setClassificationColumns(prev => ({
-                    ...prev,
-                    bankColumn: e.target.value
-                  }))}
-                >
-                  <option value="">-- Select Bank Column --</option>
-                  {bankHeaders.map(header => (
-                    <option key={header} value={header}>{header}</option>
-                  ))}
-                </select>
-                <small>Column where bank patterns are matched</small>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Checks Collection Reconciliation Section */}
         {(companyClassifiedData.length > 0 || bankClassifiedData.length > 0) && (

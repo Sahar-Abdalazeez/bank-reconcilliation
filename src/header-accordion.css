@@ -7,6 +7,7 @@
   top: 0;
   z-index: 100;
   margin-bottom: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .header-container {
@@ -89,6 +90,7 @@
 .app {
   background: #f8fafc;
   min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .container {
@@ -103,6 +105,7 @@
   border: none;
   box-sizing: border-box;
   border-top: 4px solid #0d3f8f;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Professional Content Header */
@@ -150,6 +153,7 @@
   overflow: hidden;
   transition: all 0.3s ease;
   position: relative;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .data-container:hover {
@@ -211,6 +215,7 @@
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   margin-top: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .data-table thead {
@@ -225,6 +230,7 @@
   font-size: 0.95rem;
   letter-spacing: 0.025em;
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .data-table td {
@@ -233,6 +239,7 @@
   font-size: 0.9rem;
   color: #374151;
   transition: background-color 0.2s ease;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .data-table tbody tr:hover {
@@ -305,6 +312,7 @@
   align-items: center;
   gap: 0.5rem;
   margin-left: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .download-button:hover {
@@ -319,12 +327,14 @@
   gap: 3rem;
   margin-bottom: 3rem;
   align-items: flex-start;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .upload-section {
   flex: 1;
   display: flex;
   flex-direction: column;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Equal Height Tables */
@@ -352,6 +362,7 @@
   padding-bottom: 0.75rem;
   border-bottom: 3px solid;
   border-image: linear-gradient(135deg, #0d3f8f 0%, #ffd11a 100%) 1;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .company-title {
@@ -373,6 +384,7 @@
   border-top: 4px solid #ffd11a;
   backdrop-filter: blur(10px);
   background-color: rgba(13, 63, 143, 0.95);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .classification-selector h3 {
@@ -412,6 +424,7 @@
   justify-content: center;
   backdrop-filter: blur(5px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .classification-chip:hover {
@@ -511,6 +524,7 @@
   font-weight: 600;
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .edit-rules-button:hover, .save-rules-button:hover {
@@ -572,6 +586,7 @@
   color: #1e293b;
   font-size: 0.9rem;
   transition: all 0.3s ease;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .rule-input:focus {
@@ -726,6 +741,7 @@
   color: #f59e0b;
   font-size: 0.9rem;
   transition: all 0.3s ease;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .column-select select:focus {
@@ -919,11 +935,13 @@
   color: #1e293b;
   margin-bottom: 2rem;
   text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Results Grid Layout */
 .results-tables {
   margin-top: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .results-tables h3 {
@@ -950,6 +968,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   overflow: hidden;
   transition: all 0.3s ease;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .result-table-container:hover {
