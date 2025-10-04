@@ -163,8 +163,24 @@ function App() {
         ...prev,
         ...detectedColumns
       }))
+      
+      // Auto-detect bank classification column (NARRITIVE)
+      const bankClassificationColumn = bankHeaders.find(h => h && 
+        (h.toString().toLowerCase().includes('narrative') || 
+         h.toString().toLowerCase().includes('narritive') ||
+         h.toString().toLowerCase().includes('description') ||
+         h.toString().toLowerCase().includes('details'))) || ''
+      
+      // Update bank classification column if detected
+      if (bankClassificationColumn && !classificationColumns.bankColumn) {
+        setClassificationColumns(prev => ({
+          ...prev,
+          bankColumn: bankClassificationColumn
+        }))
+        console.log('🎯 Auto-detected bank classification column:', bankClassificationColumn)
+      }
     }
-  }, [bankHeaders])
+  }, [bankHeaders, classificationColumns.bankColumn])
 
   // Helpers and classification (defined before use)
   const getBankNarrativeIndex = useCallback((headers) => {
@@ -234,6 +250,9 @@ function App() {
       const shouldClassify = exactMatch || normalizedMatch
 
       if (shouldClassify) {
+        console.log(`✅ Bank classified row: "${classificationValue}" matched patterns:`, patterns.filter(p => 
+          raw.includes(p.toLowerCase()) || text.includes(normalizeText(p))
+        ))
         classified.push(row)
       } else {
         remaining.push(row)
