@@ -598,12 +598,13 @@ function App() {
     return data.map((row) => {
       const البيانValue = row[البيانIndex]
       let checkNumber = ''
+      let extractedDate = ''
 
       if (البيانValue) {
-        // Extract numbers up to 8 digits, excluding those that are part of date-like patterns
         const text = البيانValue.toString()
+        
+        // Extract check numbers (up to 8 digits, excluding date patterns)
         const numbers = text.match(/\d{1,8}/g)
-
         if (numbers) {
           const validCheckNumber = numbers.find(num => 
             num.length <= 8 &&
@@ -613,11 +614,48 @@ function App() {
           )
           checkNumber = validCheckNumber || ''
         }
+
+        // Extract dates from various formats in البيان column
+        const datePatterns = [
+          // DD/MM/YYYY format (e.g., 15/08/2025)
+          /(\d{1,2})\/(\d{1,2})\/(\d{4})/g,
+          // YYYY-MM-DD format (e.g., 2025-08-15)
+          /(\d{4})-(\d{1,2})-(\d{1,2})/g,
+          // DD.MM.YYYY format (e.g., 15.08.2025)
+          /(\d{1,2})\.(\d{1,2})\.(\d{4})/g,
+          // DD-MM-YYYY format (e.g., 15-08-2025)
+          /(\d{1,2})-(\d{1,2})-(\d{4})/g
+        ]
+
+        for (const pattern of datePatterns) {
+          const match = pattern.exec(text)
+          if (match) {
+            try {
+              let year, month, day
+              if (pattern === datePatterns[0]) {
+                // DD/MM/YYYY format
+                [, day, month, year] = match
+              } else if (pattern === datePatterns[1]) {
+                // YYYY-MM-DD format
+                [, year, month, day] = match
+              } else {
+                // DD.MM.YYYY or DD-MM-YYYY format
+                [, day, month, year] = match
+              }
+              // Format as YYYY-MM-DD for consistency
+              extractedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+              break // Take the first valid date found
+            } catch (e) {
+              // Invalid date, continue to next pattern
+            }
+          }
+        }
       }
 
-      // Add check number to a new column
+      // Add check number and extracted date to new columns
       const newRow = [...row]
-      newRow.push(checkNumber)
+      newRow.push(checkNumber)  // رقم الشيك المستخرج
+      newRow.push(extractedDate) // التاريخ المستخرج
       return newRow
     })
   }, [])
@@ -671,16 +709,16 @@ function App() {
   const performAsyncReconciliation = useCallback(async () => {
     console.log('🔄 Starting async reconciliation process...')
     
-    // Get formatted data with checks
+    // Get formatted data with extracted checks and dates
     const formattedCompanyData = formatCompanyData(
       extractCheckNumbers(companyClassifiedData, companyHeaders), 
-      [...companyHeaders, 'رقم الشيك المستخرج']
+      [...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج']
     )
     const formattedBankData = formatBankData(bankClassifiedData, bankHeaders)
     
     // Find column indices from Essential Columns configuration
     const getColumnIndices = () => {
-      const companyHeadersWithChecks = [...companyHeaders, 'رقم الشيك المستخرج']
+      const companyHeadersWithChecks = [...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج']
       
       // Get Essential Column mappings
       const amountMapping = essentialMappings.find(m => m.id === 'amount')
@@ -887,7 +925,7 @@ function App() {
     if (companyData.length > 0 && companyHeaders.length > 0) {
       return formatCompanyData(
         extractCheckNumbers(companyData, companyHeaders),
-        [...companyHeaders, 'رقم الشيك المستخرج']
+        [...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج']
       )
     }
     return []
@@ -897,7 +935,7 @@ function App() {
   const formattedCompanyClassifiedWithChecks = useMemo(() => {
     if (companyClassifiedData.length === 0) return []
     const withChecks = extractCheckNumbers(companyClassifiedData, companyHeaders)
-    return formatCompanyData(withChecks, [...companyHeaders, 'رقم الشيك المستخرج'])
+    return formatCompanyData(withChecks, [...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج'])
   }, [companyClassifiedData, companyHeaders, extractCheckNumbers, formatCompanyData])
 
   // Bank previews and classified with formatted dates
@@ -913,7 +951,7 @@ function App() {
 
   // Get headers with check number column
   const companyHeadersWithChecks = useMemo(() => {
-    return companyHeaders.length > 0 ? [...companyHeaders, 'رقم الشيك المستخرج'] : []
+    return companyHeaders.length > 0 ? [...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج'] : []
   }, [companyHeaders])
 
   return (
@@ -1155,7 +1193,7 @@ function App() {
                               }}
                             >
                               <option value="">-- Select Company Column --</option>
-                              {[...companyHeaders, 'رقم الشيك المستخرج'].map(header => (
+                              {[...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج'].map(header => (
                                 <option key={header} value={header}>{header}</option>
                               ))}
                             </select>
@@ -1243,7 +1281,7 @@ function App() {
                               }}
                             >
                               <option value="">-- Select Company Column --</option>
-                              {[...companyHeaders, 'رقم الشيك المستخرج'].map(header => (
+                              {[...companyHeaders, 'رقم الشيك المستخرج', 'التاريخ المستخرج'].map(header => (
                                 <option key={header} value={header}>{header}</option>
                               ))}
                             </select>
