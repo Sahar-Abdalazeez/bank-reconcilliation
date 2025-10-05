@@ -192,7 +192,6 @@ function App() {
           ...prev,
           bankColumn: bankClassificationColumn
         }))
-        console.log('🎯 Auto-detected bank classification column:', bankClassificationColumn)
       }
     }
   }, [bankHeaders, classificationColumns.bankColumn])
@@ -223,15 +222,12 @@ function App() {
   }, [])
 
   const classifyCompanyData = useCallback((data, headers, classificationType = 'checks-collection') => {
-    console.log('🔍 Company classification:', classificationType)
     const classificationColumnIndex = headers.findIndex(header => header === classificationColumns.companyColumn)
     if (classificationColumnIndex === -1) {
-      console.log(`❌ Classification column '${classificationColumns.companyColumn}' not found`)
       return { classified: [], remaining: data }
     }
 
     const patterns = editableRules[classificationType]?.companyPatterns || []
-    console.log('📋 Company patterns:', patterns)
     const classified = []
     const remaining = []
 
@@ -252,17 +248,13 @@ function App() {
   }, [editableRules, classificationColumns, checkPatternMatch])
 
   const classifyBankData = useCallback((data, headers, classificationType = 'returned-checks') => {
-    console.log('🔍 Bank classification:', classificationType)
-    console.log('🎯 Using bank classification column:', classificationColumns.bankColumn)
     
     const bankClassificationColumnIndex = headers.findIndex(header => header === classificationColumns.bankColumn)
     if (bankClassificationColumnIndex === -1) {
-      console.log(`❌ Bank classification column '${classificationColumns.bankColumn}' not found`)
       return { classified: [], remaining: data }
     }
 
     const patterns = editableRules[classificationType]?.bankPatterns || []
-    console.log('📋 Bank patterns:', patterns)
     const normalizeText = (text) => text.toString().toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ').trim()
 
     const classified = []
@@ -280,7 +272,6 @@ function App() {
         const matchedPatterns = patterns.filter(pattern => 
           checkPatternMatch(classificationValue, pattern)
         )
-        console.log(`✅ Bank classified row: "${classificationValue}" matched patterns:`, matchedPatterns)
         classified.push(row)
       } else {
         remaining.push(row)
@@ -354,26 +345,21 @@ function App() {
   }, [])
 
   const saveRules = useCallback(() => {
-    console.log('🔧 SAVING RULES - Re-classifying data with updated patterns')
-    console.log('Current type:', selectedClassificationType)
-    console.log('Current patterns:', editableRules[selectedClassificationType])
+
     
     // Re-classify data with updated rules
     if (companyData.length > 0) {
       const { classified } = classifyCompanyData(companyData, companyHeaders, selectedClassificationType)
-      console.log('✅ Company re-classification:', classified.length, 'rows')
       setCompanyClassifiedData(classified)
     }
     
     if (bankData.length > 0) {
       const { classified } = classifyBankData(bankData, bankHeaders, selectedClassificationType)
-      console.log('✅ Bank re-classification:', classified.length, 'rows')
       setBankClassifiedData(classified)
     }
     
     setIsEditingRules(false)
     setChecksCollectionResults(null)
-    console.log('🎉 Rules saved and data updated!')
   }, [companyData, companyHeaders, bankData, bankHeaders, selectedClassificationType, classifyCompanyData, classifyBankData, editableRules])
 
   const processFile = useCallback((file, type) => {
@@ -446,7 +432,6 @@ function App() {
           setBankError(errorMsg)
           setBankLoading(false)
         }
-        console.error('Error processing file:', err)
       }
     }
     
@@ -602,7 +587,6 @@ function App() {
       // Generate and download file
       XLSX.writeFile(workbook, filename)
     } catch (error) {
-      console.error('Error downloading file:', error)
       alert('Error downloading file. Please try again.')
     }
   }
@@ -679,7 +663,6 @@ function App() {
     // Pad with leading zeros to make it 8 digits (minimum)
     const padded = cleanNumber.padStart(8, '0')
     
-    console.log(`🔢 Check normalization: "${checkNumber}" → "${padded}"`)
     
     return padded
   }, [])
@@ -726,7 +709,6 @@ function App() {
       const diffTime = bankDateObj.getTime() - companyDateObj.getTime()
       const diffDays = diffTime / (1000 * 60 * 60 * 24)
       
-      console.log(`📅 Date matching: Company=${companyDate}, Bank=${bankDate}, Tolerance=${toleranceDays} days, diffDays=${diffDays.toFixed(2)}`)
       
       return diffDays >= 0 && diffDays <= toleranceDays
     } catch {
@@ -739,9 +721,6 @@ function App() {
     const currentType = editableRules[selectedClassificationType]
     const toleranceDays = currentType?.dateTolerance ?? 4
     const useTolerance = currentType?.useDateTolerance ?? true
-    
-    console.log(`🧪 Testing Date Tolerance for ${currentType?.name || selectedClassificationType}`)
-    console.log(`📊 Settings: useTolerance=${useTolerance}, days=${toleranceDays}`)
     
     // Test cases
     const testCases = [
@@ -756,13 +735,11 @@ function App() {
     testCases.forEach((testCase, index) => {
       const result = isDateMatch(testCase.company, testCase.bank)
       const emoji = result === testCase.expected ? '✅' : '❌'
-      console.log(`${emoji} Test ${index + 1}: ${testCase.description} - Company: ${testCase.company}, Bank: ${testCase.bank}, Result: ${result}, Expected: ${testCase.expected}`)
     })
   }, [isDateMatch, editableRules, selectedClassificationType])
 
   // Test function for check number normalization (for debugging)
   const testCheckNumberNormalization = useCallback(() => {
-    console.log(`🔢 Testing Check Number Normalization`)
     
     const testCases = [
       { original: '1234', description: '4 digits' },
@@ -776,14 +753,11 @@ function App() {
       { original: 'abc123', description: 'With letters' },
     ]
     
-    console.log('Test cases for check number normalization:')
     testCases.forEach((testCase, index) => {
       const normalized = normalizeCheckNumber(testCase.original)
-      console.log(`${index + 1}. "${testCase.original}" (${testCase.description}) → "${normalized}"`)
     })
     
     // Test matching scenarios
-    console.log('\nMatching scenarios:')
     const companyChecks = ['1234', '056789', '1234567']
     const bankChecks = ['00001234', '00567890', '01234567']
     
@@ -792,7 +766,6 @@ function App() {
       const normalizedCompany = normalizeCheckNumber(companyCheck)
       const normalizedBank = normalizeCheckNumber(bankCheck)
       const match = normalizedCompany === normalizedBank
-      console.log(`Company: "${companyCheck}" (${normalizedCompany}) ≈ Bank: "${bankCheck}" (${normalizedBank}) → ${match ? '✅ MATCH' : '❌ NO MATCH'}`)
     })
   }, [normalizeCheckNumber])
 
@@ -800,7 +773,6 @@ function App() {
 
   // Perform async reconciliation in chunks
   const performAsyncReconciliation = useCallback(async () => {
-    console.log('🔄 Starting async reconciliation process...')
     
     // Get formatted data with checks
     const formattedCompanyData = formatCompanyData(
@@ -818,7 +790,6 @@ function App() {
       const checkMapping = essentialMappings.find(m => m.id === 'check') 
       const dateMapping = essentialMappings.find(m => m.id === 'date')
       
-      console.log('🔍 Essential Mappings:', { amountMapping, checkMapping, dateMapping })
       
       // Validate required mappings
       if (!amountMapping || !amountMapping.companyColumn || !amountMapping.bankColumn) {
@@ -858,7 +829,6 @@ function App() {
       bankDateIndex 
     } = indices
     
-    console.log('📍 Column indices:', indices)
 
     const matchedCompany = []
     const unmatchedCompany = []
@@ -873,8 +843,6 @@ function App() {
     for (let i = 0; i < formattedCompanyData.length; i += chunkSize) {
       companyChunks.push(formattedCompanyData.slice(i, i + chunkSize))
     }
-
-    console.log(`📊 Processing ${formattedCompanyData.length} company rows in ${companyChunks.length} chunks of ${chunkSize}`)
     
     // Initialize progress
     setReconciliationProgress({
@@ -895,13 +863,11 @@ function App() {
         const requiresCheckNumber = ['checks-collection', 'returned-checks'].includes(selectedClassificationType)
         
         if (!companyPremiumAmount) {
-          console.log('⏭️ Skipping company row - missing amount:', { companyPremiumAmount })
           unmatchedCompany.push(companyRow)
           continue
         }
         
         if (requiresCheckNumber && !companyCheckNumber) {
-          console.log('⏭️ Skipping company row - missing check number:', { companyCheckNumber })
           unmatchedCompany.push(companyRow)
           continue
         }
@@ -989,7 +955,6 @@ function App() {
       }
     })
 
-    console.log(`✅ Reconciliation complete: ${matchedCompany.length} matched, ${unmatchedCompany.length} unmatched, ${reviewCompany.length} for review`)
     
     return {
       matchedCompany,
@@ -1006,7 +971,6 @@ function App() {
     setReconciliationInProgress(true)
     
     try {
-      console.log('🚀 Starting reconciliation with async processing...')
       
       // Yield immediately to show loading state
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -1015,7 +979,6 @@ function App() {
       setChecksCollectionResults(results)
       
     } catch (error) {
-      console.error('❌ Reconciliation error:', error)
       setChecksCollectionResults({
         matchedCompany: [],
         unmatchedCompany: [],

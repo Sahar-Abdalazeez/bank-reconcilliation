@@ -21,7 +21,6 @@ const DataTable = ({
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Data')
       XLSX.writeFile(workbook, filename)
     } catch (error) {
-      console.error('Error downloading file:', error)
       alert('Error downloading file. Please try again.')
     }
   }, [])
