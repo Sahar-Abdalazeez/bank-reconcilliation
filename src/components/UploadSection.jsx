@@ -30,6 +30,12 @@ const UploadSection = ({
     onFileInput(e, type)
   }, [onFileInput, type])
 
+  const handleContainerClick = useCallback(() => {
+    if (!loading) {
+      document.getElementById(`${type}-file-input`)?.click()
+    }
+  }, [loading, type])
+
   return (
     <div className="upload-section">
       <h2 className={`section-title ${type}-title`}>{icon} {title}</h2>
@@ -39,6 +45,8 @@ const UploadSection = ({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
+        onClick={handleContainerClick}
+        style={{ cursor: loading ? 'default' : 'pointer' }}
       >
         <div className="upload-content">
           {loading ? (
@@ -50,11 +58,8 @@ const UploadSection = ({
           ) : (
             <>
               <div className="upload-icon">{icon}</div>
-              <h3>Drop {title} Excel file here</h3>
-              <p>or</p>
-              <label htmlFor={`${type}-file-input`} className={`upload-button ${type}-button`}>
-                Choose {title} File
-              </label>
+              <h3>Click here or drop {title} Excel file</h3>
+              <p className="upload-hint">Supports .xlsx and .xls files</p>
               <input
                 id={`${type}-file-input`}
                 type="file"

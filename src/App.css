@@ -122,7 +122,7 @@ h1 {
 }
 
 /* Upload area styles */
-.upload-area {
+/* .upload-area {
   border: 3px dashed #d1d5db;
   border-radius: 20px;
   padding: 2rem 1rem;
@@ -137,8 +137,8 @@ h1 {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
+} */
+/* 
 .upload-area::before {
   content: '';
   position: absolute;
@@ -152,8 +152,8 @@ h1 {
 }
 
 .upload-area:hover::before {
-  opacity: 1;
-}
+  opacity: 1; */
+/* } */
 
 
 .company-upload:hover {
@@ -230,7 +230,7 @@ h1 {
 
 .upload-content {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 1.5rem;
   position: relative;

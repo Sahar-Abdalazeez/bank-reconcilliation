@@ -1,0 +1,47 @@
+.accordion-group {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.accordion-group-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.accordion-group-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+}
+
+.accordion-group-description {
+  font-size: 16px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.accordion-group-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .accordion-group {
+    padding: 16px;
+  }
+
+  .accordion-group-title {
+    font-size: 24px;
+  }
+
+  .accordion-group-description {
+    font-size: 14px;
+  }
+}
+

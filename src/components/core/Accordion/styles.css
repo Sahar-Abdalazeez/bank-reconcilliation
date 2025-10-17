@@ -1,0 +1,201 @@
+.accordion {
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+}
+
+.accordion:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.accordion.open {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Variant Styles */
+.accordion.default {
+  border-color: #e2e8f0;
+}
+
+.accordion.primary {
+  border-color: #667eea;
+}
+
+.accordion.success {
+  border-color: #48bb78;
+}
+
+.accordion.warning {
+  border-color: #f6ad55;
+}
+
+.accordion.info {
+  border-color: #4299e1;
+}
+
+/* Header */
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.accordion.primary .accordion-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.accordion.success .accordion-header {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.accordion.warning .accordion-header {
+  background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.accordion.info .accordion-header {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+}
+
+.accordion-header:hover {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+}
+
+.accordion.primary .accordion-header:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #6941a5 100%);
+}
+
+.accordion.success .accordion-header:hover {
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+.accordion.warning .accordion-header:hover {
+  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+}
+
+.accordion.info .accordion-header:hover {
+  background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+}
+
+.accordion-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.accordion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.accordion-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.accordion-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  transition: color 0.3s ease;
+}
+
+.accordion.primary .accordion-title,
+.accordion.success .accordion-title,
+.accordion.warning .accordion-title,
+.accordion.info .accordion-title {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.accordion-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #4a5568;
+}
+
+.accordion.primary .accordion-arrow,
+.accordion.success .accordion-arrow,
+.accordion.warning .accordion-arrow,
+.accordion.info .accordion-arrow {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.accordion-arrow.rotate {
+  transform: rotate(180deg);
+}
+
+/* Content */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-content.show {
+  max-height: 2000px;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-content-inner {
+  padding: 24px;
+  background: white;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .accordion-header {
+    padding: 16px 20px;
+  }
+
+  .accordion-content-inner {
+    padding: 20px;
+  }
+
+  .accordion-title {
+    font-size: 16px;
+  }
+
+  .accordion-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+}
+
