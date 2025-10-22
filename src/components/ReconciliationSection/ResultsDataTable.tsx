@@ -10,6 +10,8 @@ interface ResultsDataTableProps {
   showDownload?: boolean;
   downloadHandler?: () => void;
   downloadLabel?: string;
+  totalAmount?: number;
+  showTotal?: boolean;
 }
 
 export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
@@ -20,7 +22,9 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
   icon,
   showDownload = false,
   downloadHandler,
-  downloadLabel = "Download"
+  downloadLabel = "Download",
+  totalAmount,
+  showTotal = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [previewLimit, setPreviewLimit] = useState(10);
@@ -35,7 +39,14 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
         <div className="results-table-title" onClick={() => setIsExpanded(!isExpanded)}>
           <span className="results-icon">{icon}</span>
           <h4>{title}</h4>
-          <span className="results-count">{data.length} rows</span>
+          <div className="results-meta">
+            <span className="results-count">{data.length} rows</span>
+            {showTotal && totalAmount !== undefined && (
+              <span className="results-total">
+                Total: {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            )}
+          </div>
         </div>
         <div className="results-table-actions">
           {showDownload && downloadHandler && (

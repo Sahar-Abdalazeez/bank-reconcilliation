@@ -430,9 +430,10 @@
   font-style: italic;
 }
 
-/* Matched and Unmatched Data Sections */
+/* Matched, Unmatched, and Classified Data Sections */
 .matched-data-section,
-.unmatched-data-section {
+.unmatched-data-section,
+.classified-data-section {
   margin: 32px 0;
   padding: 24px;
   background: #f8fafc;
@@ -440,19 +441,246 @@
   border: 2px solid #e2e8f0;
 }
 
+.classified-data-section {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
+  border: 2px solid #f59e0b;
+}
+
+/* Charges Download Section */
+.charges-download-section {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.download-all-charges-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.download-all-charges-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+/* Grouped Charges Section */
+.grouped-charges-section {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Sum Comparison Section (Salary) */
+.sum-comparison-section {
+  margin: 32px 0;
+  padding: 24px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  border-radius: 16px;
+  border: 2px solid #0ea5e9;
+}
+
+.sum-comparison-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #0c4a6e;
+}
+
+.sum-comparison-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+}
+
+/* Totals Comparison Card */
+.totals-comparison-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.total-item {
+  flex: 1;
+  text-align: center;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.total-item.company-total {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #3b82f6;
+}
+
+.total-item.bank-total {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+}
+
+.total-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.total-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.comparison-arrow {
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+/* Alerts */
+.difference-alert {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #ef4444;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.match-success-alert {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.alert-icon {
+  font-size: 32px;
+}
+
+.alert-content {
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.alert-content strong {
+  margin-right: 8px;
+}
+
+.difference-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #dc2626;
+  margin-left: 8px;
+}
+
+/* Salary Tables */
+.salary-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Unclassified Section */
+.unclassified-section {
+  margin: 32px 0;
+  padding: 24px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 16px;
+  border: 2px solid #9ca3af;
+}
+
+.unclassified-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #374151;
+}
+
+.unclassified-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+}
+
+.info-alert {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.unclassified-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .totals-comparison-card {
+    flex-direction: column;
+  }
+  
+  .comparison-arrow {
+    transform: rotate(90deg);
+  }
+  
+  .salary-tables {
+    grid-template-columns: 1fr;
+  }
+  
+  .unclassified-tables {
+    grid-template-columns: 1fr;
+  }
+}
+
 .matched-data-title,
-.unmatched-data-title {
+.unmatched-data-title,
+.classified-data-title {
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 8px 0;
   color: #1e293b;
 }
 
+.classified-data-title {
+  color: #92400e;
+}
+
 .matched-data-subtitle,
-.unmatched-data-subtitle {
+.unmatched-data-subtitle,
+.classified-data-subtitle {
   font-size: 16px;
   color: #64748b;
   margin: 0 0 24px 0;
+}
+
+.classified-data-subtitle {
+  color: #78350f;
 }
 
 .matched-tables-grid,
