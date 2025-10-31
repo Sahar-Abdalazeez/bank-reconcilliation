@@ -47,44 +47,20 @@
   cursor: pointer;
   user-select: none;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-bottom: 2px solid rgba(13, 63, 143, 0.15);
 }
 
 .accordion.primary .accordion-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); */
+  border-bottom-color: red;
 }
 
-.accordion.success .accordion-header {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-}
-
-.accordion.warning .accordion-header {
-  background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
-}
-
-.accordion.info .accordion-header {
-  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-}
 
 .accordion-header:hover {
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
 }
 
-.accordion.primary .accordion-header:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #6941a5 100%);
-}
-
-.accordion.success .accordion-header:hover {
-  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
-}
-
-.accordion.warning .accordion-header:hover {
-  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-}
-
-.accordion.info .accordion-header:hover {
-  background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-}
 
 .accordion-title-section {
   display: flex;
@@ -99,7 +75,7 @@
   font-size: 24px;
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(13, 63, 143, 0.1);
   border-radius: 8px;
 }
 
@@ -113,7 +89,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #2d3748;
+  color: #1e293b;
   transition: color 0.3s ease;
 }
 
@@ -121,8 +97,7 @@
 .accordion.success .accordion-title,
 .accordion.warning .accordion-title,
 .accordion.info .accordion-title {
-  color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #1e293b;
 }
 
 .accordion-arrow {
@@ -132,17 +107,17 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(13, 63, 143, 0.1);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #4a5568;
+  color: #0d3f8f;
 }
 
 .accordion.primary .accordion-arrow,
 .accordion.success .accordion-arrow,
 .accordion.warning .accordion-arrow,
 .accordion.info .accordion-arrow {
-  color: white;
-  background: rgba(255, 255, 255, 0.2);
+  color: #0d3f8f;
+  background: rgba(13, 63, 143, 0.1);
 }
 
 .accordion-arrow.rotate {

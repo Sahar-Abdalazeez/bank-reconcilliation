@@ -177,7 +177,7 @@ export const EditableRulesAccordion = () => {
   };
 
   return (
-    <>
+    <div className="editable-rules-section">
     <AccordionGroup
       title="📋 Classification Rules"
       description={
@@ -209,8 +209,8 @@ export const EditableRulesAccordion = () => {
       <Accordion
         title={currentRules.name}
         icon={selectedClassificationType.icon}
-        variant={getVariant(currentKey)}
-        defaultOpen={true}
+        // variant={getVariant(currentKey)}
+        defaultOpen={false}
       >
         <div className="classification-details">
           {/* Company Patterns */}
@@ -419,18 +419,10 @@ export const EditableRulesAccordion = () => {
           </div>
         </div>
       </Accordion>
-    </AccordionGroup>
-
-    {/* Matching Columns Configuration - Separate Accordion */}
-    <AccordionGroup
-      title=""
-      description=""
-    >
       <Accordion
         title="🎯 Matching Columns"
         icon="🔗"
-        variant="success"
-        defaultOpen={true}
+        defaultOpen={false}
       >
         <div className="matching-columns-intro">
           <p className="matching-columns-description">
@@ -449,7 +441,10 @@ export const EditableRulesAccordion = () => {
         />
       </Accordion>
     </AccordionGroup>
-    </>
+
+    {/* Matching Columns Configuration - Separate Accordion */}
+   
+    </div>
   );
 };
 
