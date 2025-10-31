@@ -1,6 +1,5 @@
 .classification-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    width: 220px;
+    background: linear-gradient(135deg, #0d3f8f 0%, #3b82f6 100%);    width: 220px;
     min-height: 140px;
     border-radius: 16px;
     padding: 24px;
@@ -10,7 +9,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
+    /* cursor: pointer; */
     transition: all 0.3s ease;
     border: 3px solid transparent;
 }
@@ -22,9 +21,10 @@
 }
 
 .classification-card.selected {
-    border-color: #ffd700;
-    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
-    transform: scale(1.05);
+    border-color: rgba(255, 209, 26, 0.6);
+    box-shadow: 0 12px 40px rgba(13, 63, 143, 0.5);
+    transform: scale(1.03);
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
 }
 
 .card-icon {

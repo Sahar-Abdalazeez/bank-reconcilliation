@@ -46,7 +46,7 @@ const UploadSection = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={handleContainerClick}
-        style={{ cursor: loading ? 'default' : 'pointer' }}
+        // style={{ cursor: loading ? 'default' : 'pointer' }}
       >
         <div className="upload-content">
           {loading ? (

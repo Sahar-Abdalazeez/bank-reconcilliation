@@ -17,7 +17,7 @@
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -47,14 +47,11 @@
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  background: #3b82f6;
   color: white;
-  border-color: #48bb78;
+  border-color: #3b82f6;
 }
 
-.save-btn:hover {
-  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
-}
 
 .reset-btn {
   background: linear-gradient(135deg, #64748b 0%, #475569 100%);
@@ -102,7 +99,7 @@
   font-weight: 500;
   color: #2d3748;
   background: white;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.3s ease;
   min-width: 200px;
 }
@@ -136,7 +133,7 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(13, 63, 143, 0.3);
 }
@@ -157,6 +154,7 @@
   border-radius: 8px;
   border: 2px solid #e2e8f0;
   transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
 }
 
 .pattern-item.editable:hover {
@@ -197,7 +195,7 @@
   font-weight: 600;
   color: #4a5568;
   background: white;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.3s ease;
   min-width: 140px;
 }
@@ -220,7 +218,7 @@
   border: none;
   border-radius: 6px;
   font-size: 16px;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
   min-width: 44px;
@@ -256,7 +254,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  cursor: pointer;
+  /* cursor: pointer; */
   font-size: 15px;
   font-weight: 500;
   color: #2d3748;
@@ -265,7 +263,7 @@
 .tolerance-toggle input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  cursor: pointer;
+  /* cursor: pointer; */
   accent-color: #0d3f8f;
 }
 
@@ -394,7 +392,7 @@ select:focus-visible {
 /* Loading State */
 .pattern-item.saving {
   opacity: 0.6;
-  pointer-events: none;
+  /* pointer-events: none; */
 }
 
 /* Success Animation */
@@ -407,21 +405,21 @@ select:focus-visible {
   }
 }
 
-.save-btn.saving {
+/* .save-btn.saving {
   animation: successPulse 1s infinite;
-}
+} */
 
 /* Disable state */
 button:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
+  /* cursor: not-allowed; */
+  /* pointer-events: none; */
 }
 
 /* Drag and Drop (Future Enhancement) */
 .pattern-item.dragging {
   opacity: 0.5;
-  cursor: move;
+  /* cursor: move; */
 }
 
 .pattern-item.drag-over {

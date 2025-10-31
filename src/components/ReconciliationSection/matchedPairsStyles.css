@@ -15,7 +15,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.2s ease;
 }
 
@@ -57,7 +57,7 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: all 0.2s ease;
 }
 
@@ -94,7 +94,7 @@
   font-weight: 600;
   background: white;
   color: #065f46;
-  cursor: pointer;
+  /* cursor: pointer; */
 }
 
 /* Pairs List */

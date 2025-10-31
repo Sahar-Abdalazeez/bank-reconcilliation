@@ -122,7 +122,11 @@ export const MatchingColumnsEditor: React.FC<MatchingColumnsEditorProps> = ({
                         className="column-mapping-select"
                         value={column.companyColumn}
                         onChange={(e) =>
-                          updateColumn(column.id, "companyColumn", e.target.value)
+                          updateColumn(
+                            column.id,
+                            "companyColumn",
+                            e.target.value
+                          )
                         }
                       >
                         <option value="">-- Select Column --</option>
@@ -168,27 +172,6 @@ export const MatchingColumnsEditor: React.FC<MatchingColumnsEditorProps> = ({
                   </div>
                 </div>
 
-                {/* Match Type Selector */}
-                {isEditMode && (
-                  <div className="match-type-row">
-                    <label className="match-type-label">Match Type:</label>
-                    <select
-                      className="match-type-dropdown"
-                      value={column.matchType}
-                      onChange={(e) =>
-                        updateColumn(column.id, "matchType", e.target.value)
-                      }
-                    >
-                      <option value="exact">🎯 Exact Match</option>
-                      <option value="numeric">💰 Numeric (exact match)</option>
-                      <option value="date">📅 Date (uses global tolerance)</option>
-                      <option value="text">📝 Text (normalized)</option>
-                    </select>
-                  </div>
-                )}
-
-
-
                 {column.matchType === "text" && isEditMode && (
                   <div className="normalize-row">
                     <label className="normalize-label">
@@ -200,26 +183,10 @@ export const MatchingColumnsEditor: React.FC<MatchingColumnsEditorProps> = ({
                         }
                       />
                       <span>
-                        Normalize (trim spaces, ignore case, remove leading zeros)
+                        Normalize (trim spaces, ignore case, remove leading
+                        zeros)
                       </span>
                     </label>
-                  </div>
-                )}
-
-                {/* View mode summary */}
-                {!isEditMode && (
-                  <div className="match-summary">
-                    <span className="match-summary-badge">
-                      {column.matchType === "exact" && "Exact Match"}
-                      {column.matchType === "numeric" && "Numeric (Exact Match)"}
-                      {column.matchType === "date" && "Date (uses global tolerance)"}
-                      {column.matchType === "text" &&
-                        column.normalize &&
-                        "Text (Normalized)"}
-                      {column.matchType === "text" &&
-                        !column.normalize &&
-                        "Text (Exact)"}
-                    </span>
                   </div>
                 )}
               </div>
@@ -236,5 +203,3 @@ export const MatchingColumnsEditor: React.FC<MatchingColumnsEditorProps> = ({
     </div>
   );
 };
-
-
