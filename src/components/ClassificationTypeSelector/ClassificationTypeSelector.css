@@ -1,0 +1,222 @@
+.classification-selector-container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.classification-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.classification-title {
+  font-size: 32px;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+}
+
+.classification-description {
+  font-size: 16px;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Carousel Wrapper */
+.classification-carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+/* Carousel Container */
+.classification-cards-carousel {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  flex: 1;
+  padding: 10px 0;
+  position: relative;
+}
+
+.classification-cards-carousel::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Carousel Arrow Buttons */
+.carousel-arrow {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d3f8f 0%, #3b82f6 100%);
+  border: 4px solid #ffffff;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(13, 63, 143, 0.4);
+  z-index: 2;
+}
+
+.carousel-arrow:hover:not(.disabled) {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  border-color: #ffd11a;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(13, 63, 143, 0.6);
+  transform: scale(1.1);
+}
+
+.carousel-arrow:active:not(.disabled) {
+  transform: scale(0.95);
+}
+
+.carousel-arrow.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-arrow svg {
+  width: 40px;
+  height: 40px;
+  stroke-width: 3;
+}
+
+/* Card styling within carousel */
+.classification-cards-carousel .classification-card {
+  flex-shrink: 0;
+  min-width: 260px;
+  width: 260px;
+}
+
+/* Dark Mode Support */
+[data-theme='dark'] .carousel-arrow {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  border-color: #4a5568;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(30, 64, 175, 0.5);
+}
+
+[data-theme='dark'] .carousel-arrow:hover:not(.disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  border-color: #ffd11a;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.7);
+}
+
+[data-theme='dark'] .carousel-arrow.disabled {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border-color: #4b5563;
+  opacity: 0.3;
+}
+
+.selected-type-info {
+  text-align: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+  border-radius: 12px;
+  margin-top: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.selected-type-info p {
+  margin: 0;
+  font-size: 18px;
+  color: #00695c;
+}
+
+.selected-type-info strong {
+  color: #004d40;
+  font-weight: 700;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .classification-cards-carousel .classification-card {
+    min-width: 240px;
+    width: 240px;
+  }
+  
+  .carousel-arrow {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .carousel-arrow svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 768px) {
+  .classification-carousel-wrapper {
+    gap: 10px;
+  }
+
+  .classification-cards-carousel .classification-card {
+    min-width: 220px;
+    width: 220px;
+  }
+  
+  .carousel-arrow {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .carousel-arrow svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .classification-title {
+    font-size: 24px;
+  }
+
+  .classification-description {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .classification-cards-carousel .classification-card {
+    min-width: 200px;
+    width: 200px;
+  }
+  
+  .carousel-arrow {
+    width: 52px;
+    height: 52px;
+  }
+  
+  .carousel-arrow svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+

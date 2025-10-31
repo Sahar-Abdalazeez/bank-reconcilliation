@@ -17,7 +17,7 @@ function App() {
       <UploadFilesSection />
 
       {/* Debug Tables - Show uploaded data */}
-      <DebugDataTables />
+      {/* <DebugDataTables /> */}
 
       {/* Classification Type Selector */}
       <ClassificationTypeSelector />
