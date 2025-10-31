@@ -170,7 +170,6 @@ export const EditableRulesAccordion = () => {
 
   // Save rules (you can add API call here)
   const saveRules = () => {
-    console.log("Saving rules:", editableRules);
     // Add your save logic here (e.g., API call, localStorage, etc.)
     alert("Rules saved successfully!");
     setIsEditMode(false);

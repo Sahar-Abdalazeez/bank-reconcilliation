@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { classificationTypes } from "../../constants/classificationTypes";
 import ClassificatioTypeCard from "../core/ClassificationTypeCrad/ClassificatioTypeCard";
 import { useFileUpload } from "../../contexts/FileUploadContext";
@@ -9,43 +9,84 @@ export const ClassificationTypeSelector = () => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const timeoutRef = useRef<number | null>(null);
 
-  const handleSelectType = (key: string) => {
+  const handleSelectType = useCallback((key: string) => {
+    // Prevent selecting the same type multiple times rapidly
+    if (selectedClassificationType?.key === key) {
+      return;
+    }
+    
     const selectedType = {
       key,
       ...classificationTypes[key]
     };
     setSelectedClassificationType(selectedType);
-    console.log('Selected classification type:', key, selectedType);
-  };
+    // Logging disabled for performance
+  }, [selectedClassificationType]);
 
-  const checkScrollButtons = () => {
+  // Use refs to store stable function references
+  const checkScrollButtonsRef = useRef<(() => void) | null>(null);
+  const throttledCheckScrollButtonsRef = useRef<(() => void) | null>(null);
+
+  // Initialize the check function once
+  checkScrollButtonsRef.current = () => {
     if (carouselRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+      // Add small threshold to prevent flickering at boundaries
+      const threshold = 1;
+      const newCanScrollLeft = scrollLeft > threshold;
+      const newCanScrollRight = scrollLeft < scrollWidth - clientWidth - threshold;
+      
+      // Only update state if values actually changed to prevent unnecessary re-renders
+      setCanScrollLeft(prev => prev !== newCanScrollLeft ? newCanScrollLeft : prev);
+      setCanScrollRight(prev => prev !== newCanScrollRight ? newCanScrollRight : prev);
     }
+  };
+
+  // Initialize throttled function
+  throttledCheckScrollButtonsRef.current = () => {
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      if (checkScrollButtonsRef.current) {
+        checkScrollButtonsRef.current();
+      }
+    }, 150);
   };
 
   useEffect(() => {
     // Wait for DOM to be ready before checking scroll buttons
     const timer = setTimeout(() => {
-      checkScrollButtons();
-    }, 100);
+      if (checkScrollButtonsRef.current) {
+        checkScrollButtonsRef.current();
+      }
+    }, 200);
     
     const carousel = carouselRef.current;
+    const throttledHandler = () => {
+      if (throttledCheckScrollButtonsRef.current) {
+        throttledCheckScrollButtonsRef.current();
+      }
+    };
+    
     if (carousel) {
-      carousel.addEventListener('scroll', checkScrollButtons);
-      window.addEventListener('resize', checkScrollButtons);
+      carousel.addEventListener('scroll', throttledHandler, { passive: true });
+      window.addEventListener('resize', throttledHandler);
     }
+    
     return () => {
       clearTimeout(timer);
-      if (carousel) {
-        carousel.removeEventListener('scroll', checkScrollButtons);
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
       }
-      window.removeEventListener('resize', checkScrollButtons);
+      if (carousel) {
+        carousel.removeEventListener('scroll', throttledHandler);
+      }
+      window.removeEventListener('resize', throttledHandler);
     };
-  }, []);
+  }, []); // Empty dependency array - only run on mount/unmount
 
   const scroll = (direction: 'left' | 'right') => {
     if (carouselRef.current) {

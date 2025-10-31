@@ -71,7 +71,6 @@ export const ReconciliationSection = () => {
         setReconciliationResults(results);
         setIsProcessing(false);
       } catch (err) {
-        console.error("Reconciliation error:", err);
         setError(`Reconciliation failed: ${err.message}`);
         setIsProcessing(false);
       }

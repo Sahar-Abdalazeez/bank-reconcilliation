@@ -10,6 +10,10 @@
 .classification-header {
   text-align: center;
   margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .classification-title {

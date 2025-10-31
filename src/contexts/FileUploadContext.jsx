@@ -86,7 +86,6 @@ export const FileUploadProvider = ({ children }) => {
 
     try {
       const result = await processExcelFile(file);
-      console.log('result', result);
       
       // Process company data to extract check numbers and dates
       if (type === 'company') {

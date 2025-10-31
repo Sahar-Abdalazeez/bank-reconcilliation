@@ -156,7 +156,6 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
   
   // If columns not configured, skip
   if (!columnConfig.companyColumn || !columnConfig.bankColumn) {
-    console.warn(`  ⚠️ Column not configured: ${columnConfig.label}`);
     return true; // Don't fail on unconfigured columns
   }
   
@@ -217,13 +216,6 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
         
         // Debug logging for first few comparisons
         if (Math.random() < 0.01) { // Log ~1% of comparisons to avoid spam
-          console.log(`🔢 Check Number Comparison:`, {
-            company: companyValue,
-            bank: bankValue,
-            normalizedCompany,
-            normalizedBank,
-            match: normalizedCompany === normalizedBank
-          });
         }
         
         return normalizedCompany === normalizedBank;
@@ -283,28 +275,13 @@ const getValueByColumnName = (row, headers, columnName) => {
  */
 export const classifyData = (data, headers, patterns, searchColumn, additionalFilters = null) => {
   if (!data || !patterns || !searchColumn) {
-    console.warn('⚠️ classifyData: Missing required parameters', {
-      hasData: !!data,
-      dataLength: data?.length,
-      hasPatterns: !!patterns,
-      patternsLength: patterns?.length,
-      searchColumn
-    });
     return [];
   }
   
   // Find the column index for search column
   const searchColumnIndex = getColumnIndex(headers, searchColumn);
   
-  console.log('🔍 Classifying data:', {
-    totalRows: data.length,
-    patterns: patterns.length,
-    searchColumn,
-    searchColumnIndex
-  });
-  
   if (searchColumnIndex === -1) {
-    console.error(`❌ Search column "${searchColumn}" not found in headers:`, headers);
     return [];
   }
   
@@ -316,7 +293,6 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
     
     // Debug first 3 rows
     if (debugCount < 3) {
-      console.log(`  Row ${debugCount + 1} - SearchColumn: "${searchColumn}" [index ${searchColumnIndex}], Value: "${searchValue}"`);
       debugCount++;
     }
     
@@ -330,7 +306,6 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
         matches = true;
         matchedPattern = typeof pattern === 'string' ? pattern : pattern.pattern;
         if (classified.length < 3) {
-          console.log(`  ✅ Match found! Pattern: "${matchedPattern}", Value: "${searchValue}"`);
         }
         break;
       }
@@ -393,7 +368,6 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
     }
   }
   
-  console.log(`  📊 Classified ${classified.length} rows out of ${data.length}`);
   
   return classified;
 };
@@ -424,14 +398,12 @@ const findUnclassifiedRowsAdvanced = (data, headers, allOtherTypes, dataType, se
   
   // If no search column provided, return all rows as unclassified
   if (!searchColumn) {
-    console.log(`⚠️ No search column configured for ${dataType} - returning all rows as unclassified`);
     return data;
   }
   
   // Get the search column index
   const searchColumnIndex = getColumnIndex(headers, searchColumn);
   if (searchColumnIndex === -1) {
-    console.warn(`⚠️ Search column "${searchColumn}" not found in ${dataType} headers - returning all rows as unclassified`);
     return data;
   }
   
@@ -449,7 +421,6 @@ const findUnclassifiedRowsAdvanced = (data, headers, allOtherTypes, dataType, se
     }
   }
   
-  console.log(`📊 Checking ${dataType} rows against ${allPatterns.length} total patterns in column "${searchColumn}"`);
   
   const unclassified = [];
   
@@ -589,7 +560,6 @@ const filterRowsByMatchingColumns = (classifiedRows, headers, matchingColumns, d
   // Log filtered rows for debugging
   const filteredCount = classifiedRows.length - filtered.length;
   if (filteredCount > 0) {
-    console.log(`  🔍 Filtered out ${filteredCount} ${dataType} rows without values in matching columns`);
   }
   
   return filtered;
@@ -603,7 +573,6 @@ const filterRowsByMatchingColumns = (classifiedRows, headers, matchingColumns, d
  * Classify company data based on patterns and filters
  */
 const classifyCompanyData = (companyData, companyHeaders, rules) => {
-  console.log('📋 Step 1: Classifying Company Data...');
   
   const classifiedCompanyRaw = classifyData(
     companyData,
@@ -613,7 +582,6 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     rules.companyFilters || null
   );
   
-  console.log('✅ Classified Company Rows (before filtering):', classifiedCompanyRaw.length);
   
   // Filter: Only keep rows that have values in ALL matching columns
   const classifiedCompanyFiltered = filterRowsByMatchingColumns(
@@ -623,7 +591,6 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     'company'
   );
   
-  console.log('✅ Classified Company Rows (after matching column filter):', classifiedCompanyFiltered.length);
   
   // Debug: Check column values
   debugColumnValues(classifiedCompanyFiltered, companyHeaders, rules.matchingColumns, 'company');
@@ -635,7 +602,6 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
  * Classify bank data based on patterns and filters
  */
 const classifyBankData = (bankData, bankHeaders, rules) => {
-  console.log('📋 Step 2: Classifying Bank Data...');
   
   const classifiedBankRaw = classifyData(
     bankData,
@@ -645,7 +611,6 @@ const classifyBankData = (bankData, bankHeaders, rules) => {
     rules.bankFilters || null
   );
   
-  console.log('✅ Classified Bank Rows (before filtering):', classifiedBankRaw.length);
   
   // Filter: Only keep rows that have values in ALL matching columns
   const classifiedBankFiltered = filterRowsByMatchingColumns(
@@ -655,7 +620,6 @@ const classifyBankData = (bankData, bankHeaders, rules) => {
     'bank'
   );
   
-  console.log('✅ Classified Bank Rows (after matching column filter):', classifiedBankFiltered.length);
   
   // Debug: Check column values
   debugColumnValues(classifiedBankFiltered, bankHeaders, rules.matchingColumns, 'bank');
@@ -674,20 +638,13 @@ const debugColumnValues = (classifiedData, headers, matchingColumns, dataType) =
     const columnIdx = getColumnIndex(headers, columnToCheck);
     
     if (columnIdx !== -1 && classifiedData.length > 0) {
-      console.log(`  🔍 Looking for column "${columnToCheck}" in ${dataType} headers`);
-      console.log(`  🔍 Found at index: ${columnIdx}`);
-      
       // Check first 5 rows
-      console.log(`  🔍 First 5 classified rows "${columnToCheck}" values:`);
-      for (let i = 0; i < Math.min(5, classifiedData.length); i++) {
-        console.log(`    Row ${i + 1}: [${columnIdx}] = "${classifiedData[i][columnIdx]}" (type: ${typeof classifiedData[i][columnIdx]})`);
-      }
+    
       
       const rowsWithValue = classifiedData.filter(row => {
         const val = row[columnIdx];
         return val !== null && val !== undefined && val !== '';
       }).length;
-      console.log(`  💰 Rows with "${columnToCheck}" values: ${rowsWithValue} / ${classifiedData.length}`);
     }
   }
 };
@@ -700,10 +657,6 @@ const debugColumnValues = (classifiedData, headers, matchingColumns, dataType) =
  * Match classified company and bank rows based on matching columns
  */
 const matchClassifiedRows = (classifiedCompany, classifiedBank, companyHeaders, bankHeaders, rules) => {
-  console.log('🔗 Step 3: Matching Rows...');
-  console.log('Matching Columns Configuration:', rules.matchingColumns);
-  console.log(`Will attempt up to ${classifiedCompany.length} × ${classifiedBank.length} = ${classifiedCompany.length * classifiedBank.length} comparisons`);
-  
   const matchedCompany = [];
   const matchedBank = [];
   const unmatchedCompany = [];
@@ -744,14 +697,6 @@ const matchClassifiedRows = (classifiedCompany, classifiedBank, companyHeaders, 
   
   // Get unmatched bank rows
   const unmatchedBank = classifiedBank.filter((_, index) => !matchedBankIndices.has(index));
-  
-  console.log('✅ Reconciliation Complete!');
-  console.log('📊 Results:');
-  console.log('  - Total Comparisons:', totalComparisons);
-  console.log('  - Matched Pairs:', matchCount);
-  console.log('  - Unmatched Company:', unmatchedCompany.length);
-  console.log('  - Unmatched Bank:', unmatchedBank.length);
-  
   return {
     matchedCompany,
     matchedBank,
@@ -784,17 +729,7 @@ const findMatchingBankRow = (
     
     const bankRow = classifiedBank[i];
     comparisons++;
-    
-    // Debug first 3 matching attempts
-    if (debugMatchAttempts < 3) {
-      console.log(`\n  🔍 Matching Attempt ${debugMatchAttempts + 1}:`);
-      rules.matchingColumns.forEach(col => {
-        const companyValue = getValueByColumnName(companyRow, companyHeaders, col.companyColumn);
-        const bankValue = getValueByColumnName(bankRow, bankHeaders, col.bankColumn);
-        console.log(`    ${col.label}: "${companyValue}" (${col.companyColumn}) ⟷ "${bankValue}" (${col.bankColumn})`);
-      });
-      wasDebugged = true;
-    }
+  
     
     // Check if all matching columns match
     const allMatch = checkAllColumnsMatch(
@@ -808,9 +743,6 @@ const findMatchingBankRow = (
     );
     
     if (allMatch) {
-      if (matchCount < 3) {
-        console.log(`  ✅ MATCH FOUND! Pair #${matchCount + 1}`);
-      }
       return {
         found: true,
         bankRow,
@@ -876,16 +808,10 @@ export const reconcileTransactions = (
   bankHeaders,
   rules
 ) => {
-  console.log('🚀 Starting Reconciliation Process...');
-  console.log('Company Data Rows:', companyData?.length || 0);
-  console.log('Bank Data Rows:', bankData?.length || 0);
-  console.log('Rules:', rules);
-  
   // ═══════════════════════════════════════════════════════════════════════
   // SPECIAL CASE: Unclassified (Show rows that didn't match any other type)
   // ═══════════════════════════════════════════════════════════════════════
   if (rules.isUnclassified) {
-    console.log('❓ Unclassified Mode - Finding rows not matched by other types');
     
     // Get all other classification types
     const allOtherTypes = rules.allClassificationTypes || {};
@@ -907,10 +833,6 @@ export const reconcileTransactions = (
       'bank',
       'NARRITIVE'  // Check this column for bank
     );
-    
-    console.log(`✅ Found ${unclassifiedCompany.length} unclassified company rows`);
-    console.log(`✅ Found ${unclassifiedBank.length} unclassified bank rows`);
-    
     // Generate statistics
     const stats = {
       totalCompanyRows: companyData.length,
@@ -942,7 +864,6 @@ export const reconcileTransactions = (
   // SPECIAL CASE: Sum Comparison (e.g., Salary - many company rows = one bank row)
   // ═══════════════════════════════════════════════════════════════════════
   if (rules.isSumComparison) {
-    console.log('💰 Sum Comparison Mode (Many-to-One)');
     
     // Classify company and bank data
     const classifiedCompanyRaw = classifyCompanyData(companyData, companyHeaders, rules);
@@ -977,12 +898,6 @@ export const reconcileTransactions = (
         });
       }
     }
-    
-    console.log(`💰 Company Total (${rules.companyAmountColumn}): ${companyTotal.toFixed(2)}`);
-    console.log(`💰 Bank Total (${rules.bankAmountColumn}): ${bankTotal.toFixed(2)}`);
-    console.log(`💰 Difference: ${Math.abs(companyTotal - bankTotal).toFixed(2)}`);
-    console.log(`💰 Match: ${companyTotal === bankTotal ? '✅ YES' : '❌ NO'}`);
-    
     // Generate statistics
     const stats = {
       totalCompanyRows: companyData.length,
@@ -1018,7 +933,6 @@ export const reconcileTransactions = (
   // SPECIAL CASE: Bank-Only Classification (e.g., Charges, Commissions)
   // ═══════════════════════════════════════════════════════════════════════
   if (rules.isBankOnly) {
-    console.log('📋 Bank-Only Classification Mode (No Matching)');
     
     // Only classify bank data
     const classifiedBankRaw = classifyBankData(bankData, bankHeaders, rules);
@@ -1031,11 +945,6 @@ export const reconcileTransactions = (
       rules.bankSearchColumn,
       rules.bankAmountColumn || null  // Pass amount column for sum calculation
     );
-    
-    console.log(`📊 Grouped into ${groupedByPattern.length} pattern groups`);
-    groupedByPattern.forEach(group => {
-      console.log(`  - ${group.pattern}: ${group.rows.length} rows`);
-    });
     
     // Generate statistics for bank-only
     const stats = {
