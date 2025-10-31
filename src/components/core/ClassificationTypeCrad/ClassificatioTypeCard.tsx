@@ -8,7 +8,7 @@ interface ClassificationTypeCardProps {
   onClick?: () => void;
 }
 
-const ClassificatioTypeCard: React.FC<ClassificationTypeCardProps> = ({ 
+const ClassificatioTypeCard: React.FC<ClassificationTypeCardProps> = React.memo(({ 
   name, 
   icon, 
   isSelected = false,
@@ -23,6 +23,8 @@ const ClassificatioTypeCard: React.FC<ClassificationTypeCardProps> = ({
       <h3 className="card-title">{name}</h3>
     </div>
   );
-};
+});
+
+ClassificatioTypeCard.displayName = 'ClassificatioTypeCard';
 
 export default ClassificatioTypeCard;
