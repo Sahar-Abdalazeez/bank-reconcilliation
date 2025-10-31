@@ -27,6 +27,21 @@
     background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
 }
 
+
+.classification-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #ffd11a 0%, #f59e0b 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .card-icon {
     font-size: 48px;
     margin-bottom: 12px;

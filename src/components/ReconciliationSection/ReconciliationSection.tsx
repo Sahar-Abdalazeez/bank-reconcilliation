@@ -4,6 +4,7 @@ import { reconcileTransactions, validateReconciliationConfig } from "../../utils
 import { downloadExcel, downloadReconciliationSummary } from "../../utils/excelDownload";
 import { DebugPanel } from "./DebugPanel";
 import { ResultsDataTable } from "./ResultsDataTable";
+import { TabbedResultsView } from "./TabbedResultsView";
 import "./reconciliationStyles.css";
 import "./debugStyles.css";
 
@@ -351,7 +352,7 @@ export const ReconciliationSection = () => {
             )}
           </div>
 
-          {/* Detailed Breakdown */}
+          {/* Detailed Breakdown
           {!isBankOnly && (
             <div className="breakdown-section">
               <h3 className="breakdown-title">📋 Detailed Breakdown</h3>
@@ -393,7 +394,7 @@ export const ReconciliationSection = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Unclassified Transactions */}
           {isUnclassified ? (
@@ -412,40 +413,45 @@ export const ReconciliationSection = () => {
                 </div>
               </div>
               
-              {/* Unclassified Tables */}
-              <div className="unclassified-tables">
-                <ResultsDataTable
-                  title="Unclassified Company Transactions"
-                  data={reconciliationResults.classifiedCompany}
-                  headers={companyHeaders}
-                  variant="unmatched"
-                  icon="🏢"
-                  showDownload={true}
-                  downloadHandler={() => {
-                    downloadExcel(
-                      reconciliationResults.classifiedCompany,
-                      companyHeaders,
-                      "Unclassified_Company"
-                    );
-                  }}
-                  downloadLabel="Download Company Unclassified"
-                />
-                
-                <ResultsDataTable
-                  title="Unclassified Bank Transactions"
-                  data={reconciliationResults.classifiedBank}
-                  headers={bankHeaders}
-                  variant="unmatched"
-                  icon="🏦"
-                  showDownload={true}
-                  downloadHandler={() => {
-                    downloadExcel(
-                      reconciliationResults.classifiedBank,
-                      bankHeaders,
-                      "Unclassified_Bank"
-                    );
-                  }}
-                  downloadLabel="Download Bank Unclassified"
+              {/* Unclassified Tables - Tabbed View */}
+              <div className="results-section">
+                <TabbedResultsView
+                  tabs={[
+                    {
+                      id: 'unclassified-company',
+                      label: 'Unclassified Company',
+                      icon: '❓',
+                      data: reconciliationResults.classifiedCompany,
+                      headers: companyHeaders,
+                      variant: 'unmatched',
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          reconciliationResults.classifiedCompany,
+                          companyHeaders,
+                          "Unclassified_Company"
+                        );
+                      },
+                      downloadLabel: 'Download Company Unclassified',
+                    },
+                    {
+                      id: 'unclassified-bank',
+                      label: 'Unclassified Bank',
+                      icon: '❓',
+                      data: reconciliationResults.classifiedBank,
+                      headers: bankHeaders,
+                      variant: 'unmatched',
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          reconciliationResults.classifiedBank,
+                          bankHeaders,
+                          "Unclassified_Bank"
+                        );
+                      },
+                      downloadLabel: 'Download Bank Unclassified',
+                    },
+                  ]}
                 />
               </div>
             </div>
@@ -499,44 +505,49 @@ export const ReconciliationSection = () => {
                 </div>
               )}
               
-              {/* Company Salary Entries */}
-              <div className="salary-tables">
-                <ResultsDataTable
-                  title="Company Salary Entries"
-                  data={reconciliationResults.classifiedCompany}
-                  headers={companyHeaders}
-                  variant="matched"
-                  icon="🏢"
-                  showDownload={true}
-                  downloadHandler={() => {
-                    downloadExcel(
-                      reconciliationResults.classifiedCompany,
-                      companyHeaders,
-                      "Company_Salary_Entries"
-                    );
-                  }}
-                  downloadLabel="Download Company Entries"
-                  totalAmount={reconciliationResults.stats.companyTotal}
-                  showTotal={true}
-                />
-                
-                <ResultsDataTable
-                  title="Bank Salary Transfer"
-                  data={reconciliationResults.classifiedBank}
-                  headers={bankHeaders}
-                  variant="matched"
-                  icon="🏦"
-                  showDownload={true}
-                  downloadHandler={() => {
-                    downloadExcel(
-                      reconciliationResults.classifiedBank,
-                      bankHeaders,
-                      "Bank_Salary_Transfer"
-                    );
-                  }}
-                  downloadLabel="Download Bank Transfer"
-                  totalAmount={reconciliationResults.stats.bankTotal}
-                  showTotal={true}
+              {/* Company Salary Entries - Tabbed View */}
+              <div className="results-section">
+                <TabbedResultsView
+                  tabs={[
+                    {
+                      id: 'salary-company',
+                      label: 'Company Salary Entries',
+                      icon: '💰',
+                      data: reconciliationResults.classifiedCompany,
+                      headers: companyHeaders,
+                      variant: 'matched',
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          reconciliationResults.classifiedCompany,
+                          companyHeaders,
+                          "Company_Salary_Entries"
+                        );
+                      },
+                      downloadLabel: 'Download Company Entries',
+                      totalAmount: reconciliationResults.stats.companyTotal,
+                      showTotal: true,
+                    },
+                    {
+                      id: 'salary-bank',
+                      label: 'Bank Salary Transfer',
+                      icon: '💰',
+                      data: reconciliationResults.classifiedBank,
+                      headers: bankHeaders,
+                      variant: 'matched',
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          reconciliationResults.classifiedBank,
+                          bankHeaders,
+                          "Bank_Salary_Transfer"
+                        );
+                      },
+                      downloadLabel: 'Download Bank Transfer',
+                      totalAmount: reconciliationResults.stats.bankTotal,
+                      showTotal: true,
+                    },
+                  ]}
                 />
               </div>
             </div>
@@ -563,259 +574,107 @@ export const ReconciliationSection = () => {
                 </button>
               </div>
               
-              {/* Grouped Charges Tables */}
-              <div className="grouped-charges-section">
-                {reconciliationResults.groupedByPattern?.map((group, index) => (
-                  <ResultsDataTable
-                    key={index}
-                    title={`${group.pattern}`}
-                    data={group.rows}
-                    headers={bankHeaders}
-                    variant="matched"
-                    icon="💳"
-                    showDownload={true}
-                    downloadHandler={() => {
-                      downloadExcel(
-                        group.rows,
-                        bankHeaders,
-                        `Charges_${group.pattern.replace(/[^a-zA-Z0-9]/g, '_')}`
-                      );
-                    }}
-                    downloadLabel={`Download (${group.rows.length})`}
-                    totalAmount={group.totalAmount}
-                    showTotal={true}
-                  />
-                ))}
+              {/* Grouped Charges Tables - Tabbed View */}
+              <div className="results-section">
+                <TabbedResultsView
+                  tabs={[
+                    ...(reconciliationResults.groupedByPattern?.map((group, index) => ({
+                      id: `charges-${index}`,
+                      label: group.pattern,
+                      icon: '💳',
+                      data: group.rows,
+                      headers: bankHeaders,
+                      variant: 'matched' as const,
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          group.rows,
+                          bankHeaders,
+                          `Charges_${group.pattern.replace(/[^a-zA-Z0-9]/g, '_')}`
+                        );
+                      },
+                      downloadLabel: `Download (${group.rows.length})`,
+                      totalAmount: group.totalAmount,
+                      showTotal: true,
+                    })) || []),
+                  ]}
+                />
               </div>
             </div>
           ) : (
             <>
-              {/* Matched Data Tables */}
-              <div className="matched-data-section">
-                <h3 className="matched-data-title">✅ Matched Transactions</h3>
-                <p className="matched-data-subtitle">
-                  Successfully matched transactions between company and bank data
-                </p>
-                
-                <div className="matched-tables-grid">
-                  <ResultsDataTable
-                    title="Matched Company Transactions"
-                    data={reconciliationResults.matchedCompany}
-                    headers={companyHeaders}
-                    variant="matched"
-                    icon="🏢"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadMatchedCompany()}
-                    downloadLabel="Download Company Matches"
-                  />
-                  
-                  <ResultsDataTable
-                    title="Matched Bank Transactions"
-                    data={reconciliationResults.matchedBank}
-                    headers={bankHeaders}
-                    variant="matched"
-                    icon="🏦"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadMatchedBank()}
-                    downloadLabel="Download Bank Matches"
-                  />
-                </div>
-              </div>
-
-              {/* Unmatched Data Tables */}
-              <div className="unmatched-data-section">
-                <h3 className="unmatched-data-title">❌ Unmatched Transactions</h3>
-                <p className="unmatched-data-subtitle">
-                  Transactions that could not be matched between company and bank data
-                </p>
-                
-                <div className="unmatched-tables-grid">
-                  <ResultsDataTable
-                    title="Unmatched Company Transactions"
-                    data={reconciliationResults.unmatchedCompany}
-                    headers={companyHeaders}
-                    variant="unmatched"
-                    icon="🏢"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadUnmatchedCompany()}
-                    downloadLabel="Download Company Unmatched"
-                  />
-                  
-                  <ResultsDataTable
-                    title="Unmatched Bank Transactions"
-                    data={reconciliationResults.unmatchedBank}
-                    headers={bankHeaders}
-                    variant="unmatched"
-                    icon="🏦"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadUnmatchedBank()}
-                    downloadLabel="Download Bank Unmatched"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Download Buttons */}
-          {!isBankOnly && (
-            <div className="download-section">
-              <h3 className="download-title">📥 Download Results</h3>
-              <div className="download-buttons">
-                <button 
-                  className="download-btn matched" 
-                  onClick={handleDownloadMatchedCompany}
-                  disabled={!reconciliationResults.matchedCompany || reconciliationResults.matchedCompany.length === 0}
-                >
-                  ✅ Download Matched Company ({reconciliationResults.matchedCompany.length})
-                </button>
-                <button 
-                  className="download-btn matched" 
-                  onClick={handleDownloadMatchedBank}
-                  disabled={!reconciliationResults.matchedBank || reconciliationResults.matchedBank.length === 0}
-                >
-                  ✅ Download Matched Bank ({reconciliationResults.matchedBank.length})
-                </button>
-                <button 
-                  className="download-btn unmatched" 
-                  onClick={handleDownloadUnmatchedCompany}
-                  disabled={!reconciliationResults.unmatchedCompany || reconciliationResults.unmatchedCompany.length === 0}
-                >
-                  ❌ Download Unmatched Company ({reconciliationResults.unmatchedCompany.length})
-                </button>
-                <button 
-                  className="download-btn unmatched" 
-                  onClick={handleDownloadUnmatchedBank}
-                  disabled={!reconciliationResults.unmatchedBank || reconciliationResults.unmatchedBank.length === 0}
-                >
-                  ❌ Download Unmatched Bank ({reconciliationResults.unmatchedBank.length})
-                </button>
-              </div>
-              
-              {/* Additional Download Options */}
-              <div className="download-buttons additional">
-                <button 
-                  className="download-btn summary" 
-                  onClick={handleDownloadSummary}
-                  disabled={!reconciliationResults.stats}
-                >
-                  📊 Download Complete Summary
-                </button>
-              </div>
-              
-              <p className="download-note">✅ Excel files will be downloaded with timestamps</p>
-            </div>
-          )}
-
-          {/* Bank-Only Classified Data (for Charges, etc.) */}
-          {isBankOnly ? (
-            <div className="classified-data-section">
-              <h3 className="classified-data-title">💳 Classified {selectedClassificationType?.name}</h3>
-              <p className="classified-data-subtitle">
-                All {selectedClassificationType?.name.toLowerCase()} found in bank data
-              </p>
-              
-              <ResultsDataTable
-                title={`Classified ${selectedClassificationType?.name}`}
-                data={reconciliationResults.classifiedBank}
-                headers={bankHeaders}
-                variant="matched"
-                icon="💳"
-                showDownload={true}
-                downloadHandler={() => handleDownloadClassifiedCharges()}
-                downloadLabel={`Download ${selectedClassificationType?.name}`}
-              />
-            </div>
-          ) : (
-            <>
-              {/* Matched Data Tables */}
-              <div className="matched-data-section">
-                <h3 className="matched-data-title">✅ Matched Transactions</h3>
-                <p className="matched-data-subtitle">
-                  Successfully matched transactions between company and bank data
-                </p>
-                
-                <div className="matched-tables-grid">
-                  <ResultsDataTable
-                    title="Matched Company Transactions"
-                    data={reconciliationResults.matchedCompany}
-                    headers={companyHeaders}
-                    variant="matched"
-                    icon="🏢"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadMatchedCompany()}
-                    downloadLabel="Download Company Matches"
-                  />
-                  
-                  <ResultsDataTable
-                    title="Matched Bank Transactions"
-                    data={reconciliationResults.matchedBank}
-                    headers={bankHeaders}
-                    variant="matched"
-                    icon="🏦"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadMatchedBank()}
-                    downloadLabel="Download Bank Matches"
-                  />
-                </div>
-              </div>
-
-              {/* Unmatched Data Tables */}
-              <div className="unmatched-data-section">
-                <h3 className="unmatched-data-title">❌ Unmatched Transactions</h3>
-                <p className="unmatched-data-subtitle">
-                  Transactions that could not be matched between company and bank data
-                </p>
-                
-                <div className="unmatched-tables-grid">
-                  <ResultsDataTable
-                    title="Unmatched Company Transactions"
-                    data={reconciliationResults.unmatchedCompany}
-                    headers={companyHeaders}
-                    variant="unmatched"
-                    icon="🏢"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadUnmatchedCompany()}
-                    downloadLabel="Download Company Unmatched"
-                  />
-                  
-                  <ResultsDataTable
-                    title="Unmatched Bank Transactions"
-                    data={reconciliationResults.unmatchedBank}
-                    headers={bankHeaders}
-                    variant="unmatched"
-                    icon="🏦"
-                    showDownload={true}
-                    downloadHandler={() => handleDownloadUnmatchedBank()}
-                    downloadLabel="Download Bank Unmatched"
-                  />
-                </div>
+              {/* Tabbed Results View */}
+              <div className="results-section">
+                <TabbedResultsView
+                  tabs={[
+                    {
+                      id: 'matched-company',
+                      label: 'Matched Company',
+                      icon: '✅',
+                      data: reconciliationResults.matchedCompany,
+                      headers: companyHeaders,
+                      variant: 'matched',
+                      showDownload: true,
+                      downloadHandler: () => handleDownloadMatchedCompany(),
+                      downloadLabel: 'Download Company Matches',
+                    },
+                    {
+                      id: 'matched-bank',
+                      label: 'Matched Bank',
+                      icon: '✅',
+                      data: reconciliationResults.matchedBank,
+                      headers: bankHeaders,
+                      variant: 'matched',
+                      showDownload: true,
+                      downloadHandler: () => handleDownloadMatchedBank(),
+                      downloadLabel: 'Download Bank Matches',
+                    },
+                    {
+                      id: 'unmatched-company',
+                      label: 'Unmatched Company',
+                      icon: '❌',
+                      data: reconciliationResults.unmatchedCompany,
+                      headers: companyHeaders,
+                      variant: 'unmatched',
+                      showDownload: true,
+                      downloadHandler: () => handleDownloadUnmatchedCompany(),
+                      downloadLabel: 'Download Company Unmatched',
+                    },
+                    {
+                      id: 'unmatched-bank',
+                      label: 'Unmatched Bank',
+                      icon: '❌',
+                      data: reconciliationResults.unmatchedBank,
+                      headers: bankHeaders,
+                      variant: 'unmatched',
+                      showDownload: true,
+                      downloadHandler: () => handleDownloadUnmatchedBank(),
+                      downloadLabel: 'Download Bank Unmatched',
+                    },
+                    // Debug tables
+                    ...(reconciliationResults.classifiedCompanyRaw && reconciliationResults.classifiedCompanyRaw.length > 0 ? [{
+                      id: 'debug-company-raw',
+                      label: 'Debug: Company Raw',
+                      icon: '📋',
+                      data: reconciliationResults.classifiedCompanyRaw,
+                      headers: companyHeaders,
+                      variant: 'matched' as const,
+                      showDownload: false,
+                    }] : []),
+                    ...(reconciliationResults.classifiedBankRaw && reconciliationResults.classifiedBankRaw.length > 0 ? [{
+                      id: 'debug-bank-raw',
+                      label: 'Debug: Bank Raw',
+                      icon: '🏦',
+                      data: reconciliationResults.classifiedBankRaw,
+                      headers: bankHeaders,
+                      variant: 'matched' as const,
+                      showDownload: false,
+                    }] : []),
+                  ]}
+                />
               </div>
             </>
           )}
-
-          {/* Debug: Classified Data (Before Filtering) */}
-          <div className="debug-classified-section">
-            <h3 className="debug-section-title">🐛 Debug: Classified Data (Before Amount Filtering)</h3>
-            <p className="debug-section-subtitle">
-              These rows matched the text patterns but haven't been filtered by amount columns yet
-            </p>
-            
-            <ResultsDataTable
-              title="Classified Company (Raw - Before Filtering)"
-              data={reconciliationResults.classifiedCompanyRaw || []}
-              headers={companyHeaders}
-              variant="matched"
-              icon="📋"
-            />
-            
-            <ResultsDataTable
-              title="Classified Bank (Raw - Before Filtering)"
-              data={reconciliationResults.classifiedBankRaw || []}
-              headers={bankHeaders}
-              variant="matched"
-              icon="🏦"
-            />
-          </div>
         </div>
       )}
 

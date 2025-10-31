@@ -35,17 +35,11 @@
   flex: 1;
 }
 
-.results-table-title:hover {
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  margin: -20px -24px;
-  padding: 20px 24px;
-  border-radius: 8px;
-}
 
 .results-table-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .results-icon {
@@ -85,11 +79,50 @@
 }
 
 .results-data-table.matched .results-count {
-  background: #10b981;
+  background: #0d3f8f ;
 }
 
 .results-data-table.unmatched .results-count {
   background: #ef4444;
+}
+
+.results-fullscreen-btn {
+  background: linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(13, 63, 143, 0.3);
+  flex-shrink: 0;
+}
+
+.results-fullscreen-btn:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 63, 143, 0.4);
+}
+
+.results-fullscreen-btn:active {
+  transform: translateY(0);
+}
+
+.results-fullscreen-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.results-fullscreen-btn svg path,
+.results-fullscreen-btn svg line {
+  stroke: white !important;
+  fill: none;
 }
 
 .results-toggle-btn {
@@ -100,7 +133,7 @@
   border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
-  /* cursor: pointer; */
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -110,23 +143,31 @@
 }
 
 .results-download-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
-  /* cursor: pointer; */
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(13, 63, 143, 0.3);
+  border: 2px solid transparent;
 }
 
 .results-download-btn:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: scale(1.05);
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(13, 63, 143, 0.4);
+  border-color: rgba(255, 209, 26, 0.3);
+}
+
+.results-download-btn:active {
+  transform: translateY(0);
 }
 
 /* Table Content */

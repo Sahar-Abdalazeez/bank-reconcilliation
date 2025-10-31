@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Accordion, AccordionGroup } from "../core";
 import { classificationTypes } from "../../constants/classificationTypes";
 import "./editableStyles.css";
@@ -15,6 +15,8 @@ export const EditableRulesAccordion = () => {
     bankHeaders 
   } = useFileUpload();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSectionVisible, setIsSectionVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   // Initialize editable rules if not already set
   React.useEffect(() => {
@@ -22,6 +24,84 @@ export const EditableRulesAccordion = () => {
       setEditableRules(JSON.parse(JSON.stringify(classificationTypes)));
     }
   }, [editableRules, setEditableRules]);
+
+  // Intersection Observer to detect when section is visible
+  useEffect(() => {
+    // Only set up observer if we have the necessary data
+    if (!selectedClassificationType || !editableRules) {
+      setIsSectionVisible(false);
+      return;
+    }
+
+    let observer: IntersectionObserver | null = null;
+    let scrollHandler: (() => void) | null = null;
+    let timeoutId: number;
+    
+    const updateVisibility = () => {
+      const currentSection = sectionRef.current;
+      if (!currentSection) {
+        setIsSectionVisible(false);
+        return;
+      }
+      
+      const rect = currentSection.getBoundingClientRect();
+      const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+      
+      // Simple check: section is visible if any part of it is in the viewport
+      const isVisible = rect.bottom > 0 && rect.top < windowHeight;
+      
+      setIsSectionVisible(isVisible);
+    };
+
+    // Use requestAnimationFrame for more reliable timing
+    const setupObserver = () => {
+      updateVisibility();
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            setIsSectionVisible(entry.isIntersecting);
+          });
+        },
+        {
+          threshold: [0, 0.05, 0.1],
+          rootMargin: '0px',
+        }
+      );
+
+      const currentSection = sectionRef.current;
+      if (currentSection) {
+        observer.observe(currentSection);
+      }
+
+      // Also listen to scroll for real-time updates
+      scrollHandler = updateVisibility;
+      window.addEventListener('scroll', scrollHandler, { passive: true });
+      window.addEventListener('resize', scrollHandler, { passive: true });
+    };
+
+    // Try immediately, then with a small delay if ref not ready
+    if (sectionRef.current) {
+      setupObserver();
+    } else {
+      timeoutId = setTimeout(() => {
+        if (sectionRef.current) {
+          setupObserver();
+        }
+      }, 500);
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (scrollHandler) {
+        window.removeEventListener('scroll', scrollHandler);
+        window.removeEventListener('resize', scrollHandler);
+      }
+      if (observer && sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, [selectedClassificationType, editableRules]); // Re-run when these change
 
   if (!selectedClassificationType || !editableRules) {
     return null;
@@ -177,7 +257,7 @@ export const EditableRulesAccordion = () => {
   };
 
   return (
-    <div className="editable-rules-section">
+    <div className="editable-rules-section" ref={sectionRef}>
     <AccordionGroup
       title="📋 Classification Rules"
       description={
@@ -186,22 +266,55 @@ export const EditableRulesAccordion = () => {
           : "View detailed patterns and rules for each classification type"
       }
     >
-      <div className="rules-toolbar">
-        <button 
-          className={`toolbar-btn ${isEditMode ? 'edit-active' : ''}`}
-          onClick={() => setIsEditMode(!isEditMode)}
-        >
-          {isEditMode ? "👁️ View Mode" : "✏️ Edit Mode"}
-        </button>
+      <div className={`rules-toolbar ${isSectionVisible ? 'visible' : ''}`}>
+        <div className="toolbar-btn-wrapper">
+          <button 
+            className={`toolbar-btn ${isEditMode ? 'edit-active' : ''}`}
+            onClick={() => setIsEditMode(!isEditMode)}
+          >
+            {isEditMode ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            )}
+          </button>
+          <span className="toolbar-tooltip">{isEditMode ? "Switch to View Mode" : "Switch to Edit Mode"}</span>
+        </div>
         
         {isEditMode && (
           <>
-            <button className="toolbar-btn save-btn" onClick={saveRules}>
-              💾 Save Changes
-            </button>
-            <button className="toolbar-btn reset-btn" onClick={resetToDefaults}>
-              🔄 Reset to Default
-            </button>
+            <div className="toolbar-btn-wrapper">
+              <button 
+                className="toolbar-btn save-btn" 
+                onClick={saveRules}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+              </button>
+              <span className="toolbar-tooltip">Save All Changes</span>
+            </div>
+            <div className="toolbar-btn-wrapper">
+              <button 
+                className="toolbar-btn reset-btn" 
+                onClick={resetToDefaults}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <polyline points="23 20 23 14 17 14"></polyline>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+              </button>
+              <span className="toolbar-tooltip">Reset to Default Values</span>
+            </div>
           </>
         )}
       </div>
@@ -462,4 +575,5 @@ const getVariant = (key: string) => {
   };
   return variants[key] || "default";
 };
+
 

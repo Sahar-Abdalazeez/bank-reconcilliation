@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TableModal } from './TableModal';
 import './resultsTableStyles.css';
 
 interface ResultsDataTableProps {
@@ -28,6 +29,7 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [previewLimit, setPreviewLimit] = useState(10);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!data || data.length === 0) {
     return null;
@@ -49,6 +51,27 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
           </div>
         </div>
         <div className="results-table-actions">
+          <button
+            className="results-fullscreen-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsModalOpen(true);
+            }}
+            title="Open in full-screen modal"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M8 21H5a2 2 0 0 1-2-2v-3m18 0v3a2 2 0 0 1-2 2h-3M3 16v-3m18 0v3M3 8V5m18 0v3" />
+            </svg>
+          </button>
           {showDownload && downloadHandler && (
             <button 
               className="results-download-btn"
@@ -63,12 +86,24 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
           )}
           <button 
             className="results-toggle-btn"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
           >
             {isExpanded ? '▼ Collapse' : '▶ View Data'}
           </button>
         </div>
       </div>
+
+      <TableModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={title}
+        data={data}
+        headers={headers}
+        icon={icon}
+      />
 
       {isExpanded && (
         <div className="results-table-content">

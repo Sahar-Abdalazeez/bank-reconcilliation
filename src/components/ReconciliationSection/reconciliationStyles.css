@@ -128,7 +128,8 @@
 }
 
 .reconcile-btn.rerun {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+ background:  linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
+  /* background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); */
 }
 /* 
 .reconcile-btn.rerun:hover {
