@@ -2,7 +2,6 @@ import logoImage from "../assets/al-mashreq-logo.png";
 
 export const Header = () => {
   return (
-    <>
       <header className="app-header">
         <div className="header-container">
           <div className="header-content">
@@ -36,13 +35,6 @@ export const Header = () => {
           </div>
         </div>
       </header>
-      <div className="content-header">
-        <h2>Upload & Process Your Data</h2>
-        <p>
-          Upload company and bank Excel files separately (.xlsx, .xls) for
-          automated reconciliation
-        </p>
-      </div>
-    </>
+    
   );
 };
