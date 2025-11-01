@@ -183,7 +183,6 @@
   font-weight: 500;
   color: #2d3748;
   background: white;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
 }
 
@@ -239,7 +238,6 @@
   font-weight: 500;
   color: #2d3748;
   background: white;
-  /* cursor: pointer; */
 }
 
 .match-type-dropdown:focus {
@@ -301,13 +299,11 @@
   font-size: 14px;
   font-weight: 500;
   color: #2d3748;
-  /* cursor: pointer; */
 }
 
 .date-tolerance-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  /* cursor: pointer; */
   accent-color: #0d3f8f;
 }
 
@@ -352,13 +348,11 @@
   font-size: 14px;
   font-weight: 500;
   color: #2d3748;
-  /* cursor: pointer; */
 }
 
 .normalize-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  /* cursor: pointer; */
   accent-color: #0d3f8f;
 }
 
@@ -392,7 +386,6 @@
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(13, 63, 143, 0.3);
   display: flex;

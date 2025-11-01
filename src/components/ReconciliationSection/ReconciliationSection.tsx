@@ -1,12 +1,9 @@
 import React, { useState } from "react";
 import { useFileUpload } from "../../contexts/FileUploadContext";
 import { reconcileTransactions, validateReconciliationConfig } from "../../utils/reconciliationEngine";
-import { downloadExcel, downloadReconciliationSummary } from "../../utils/excelDownload";
-import { DebugPanel } from "./DebugPanel";
-import { ResultsDataTable } from "./ResultsDataTable";
+import { downloadExcel } from "../../utils/excelDownload";
 import { TabbedResultsView } from "./TabbedResultsView";
 import "./reconciliationStyles.css";
-import "./debugStyles.css";
 
 export const ReconciliationSection = () => {
   const {
@@ -152,24 +149,6 @@ export const ReconciliationSection = () => {
     }
   };
 
-
-  const handleDownloadSummary = () => {
-    if (!reconciliationResults?.stats) {
-      alert("No reconciliation results to download");
-      return;
-    }
-    
-    const success = downloadReconciliationSummary(
-      reconciliationResults.stats,
-      reconciliationResults,
-      "Reconciliation_Summary"
-    );
-    
-    if (!success) {
-      alert("Failed to download reconciliation summary");
-    }
-  };
-
   const handleDownloadClassifiedCharges = () => {
     if (!reconciliationResults?.classifiedBank || reconciliationResults.classifiedBank.length === 0) {
       alert("No classified charges to download");
@@ -187,27 +166,42 @@ export const ReconciliationSection = () => {
     }
   };
 
-  if (!canReconcile) {
-    return (null
-      // <div className="reconciliation-section">
-      //   <div className="reconciliation-placeholder">
-      //     <div className="placeholder-icon">🔄</div>
-      //     <h3>Ready to Reconcile?</h3>
-      //     <p>Please complete the following steps:</p>
-      //     <ul className="checklist">
-      //       <li className={companyData?.length > 0 ? "completed" : ""}>
-      //         {companyData?.length > 0 ? "✅" : "⏳"} Upload Company Excel file
-      //       </li>
-      //       <li className={bankData?.length > 0 ? "completed" : ""}>
-      //         {bankData?.length > 0 ? "✅" : "⏳"} Upload Bank Excel file
-      //       </li>
-      //       <li className={selectedClassificationType ? "completed" : ""}>
-      //         {selectedClassificationType ? "✅" : "⏳"} Select Classification Type
-      //       </li>
-      //     </ul>
-      //   </div>
-      // </div>
+  const handleDownloadClassifiedCompany = () => {
+    if (!reconciliationResults?.classifiedCompanyRaw || reconciliationResults.classifiedCompanyRaw.length === 0) {
+      alert("No classified company data to download");
+      return;
+    }
+    
+    const success = downloadExcel(
+      reconciliationResults.classifiedCompanyRaw,
+      companyHeaders,
+      `Classified_Company_${selectedClassificationType?.name || 'Data'}`
     );
+    
+    if (!success) {
+      alert("Failed to download classified company data");
+    }
+  };
+
+  const handleDownloadClassifiedBank = () => {
+    if (!reconciliationResults?.classifiedBankRaw || reconciliationResults.classifiedBankRaw.length === 0) {
+      alert("No classified bank data to download");
+      return;
+    }
+    
+    const success = downloadExcel(
+      reconciliationResults.classifiedBankRaw,
+      bankHeaders,
+      `Classified_Bank_${selectedClassificationType?.name || 'Data'}`
+    );
+    
+    if (!success) {
+      alert("Failed to download classified bank data");
+    }
+  };
+
+  if (!canReconcile) {
+    return null;
   }
 
   return (
@@ -714,7 +708,6 @@ export const ReconciliationSection = () => {
                       downloadHandler: () => handleDownloadUnmatchedBank(),
                       downloadLabel: 'Download Bank Unmatched',
                     },
-                    // Debug tables
                     ...(reconciliationResults.classifiedCompanyRaw && reconciliationResults.classifiedCompanyRaw.length > 0 ? [{
                       id: 'classified-company-raw',
                       label: 'Classified Company',
@@ -722,7 +715,9 @@ export const ReconciliationSection = () => {
                       data: reconciliationResults.classifiedCompanyRaw,
                       headers: companyHeaders,
                       variant: 'matched' as const,
-                      showDownload: false,
+                      showDownload: true,
+                      downloadHandler: () => handleDownloadClassifiedCompany(),
+                      downloadLabel: 'Download Classified Company',
                     }] : []),
                     ...(reconciliationResults.classifiedBankRaw && reconciliationResults.classifiedBankRaw.length > 0 ? [{
                       id: 'classified-bank-raw',
@@ -731,7 +726,9 @@ export const ReconciliationSection = () => {
                       data: reconciliationResults.classifiedBankRaw,
                       headers: bankHeaders,
                       variant: 'matched' as const,
-                      showDownload: false,
+                      showDownload: true,
+                      downloadHandler: () => handleDownloadClassifiedBank(),
+                      downloadLabel: 'Download Classified Bank',
                     }] : []),
                   ]}
                 />

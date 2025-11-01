@@ -84,14 +84,8 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, rgba(13, 63, 143, 0.1) 0%, rgba(13, 63, 143, 0.05) 100%);
   border-radius: 10px;
   transition: all 0.3s ease;
-}
-
-.results-tab.active .tab-icon {
-  background: linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
-  box-shadow: 0 4px 12px rgba(13, 63, 143, 0.3);
 }
 
 .tab-content {

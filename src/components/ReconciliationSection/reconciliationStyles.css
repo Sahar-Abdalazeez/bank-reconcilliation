@@ -97,13 +97,12 @@
 /* Buttons */
 .reconcile-btn {
   padding: 16px 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #4239f1 100%);
   color: white;
   border: none;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   display: flex;
@@ -112,9 +111,9 @@
 }
 
 .reconcile-btn:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #6941a5 100%);
+  background: linear-gradient(135deg, #5568d3 0%, #4239f1 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 16px #4239f1;
 }
 
 .reconcile-btn:disabled {
@@ -127,14 +126,9 @@
   background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
 }
 
-.reconcile-btn.rerun {
+ .reconcile-btn.rerun {
  background:  linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
-  /* background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); */
 }
-/* 
-.reconcile-btn.rerun:hover {
-  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
-} */
 
 .clear-btn {
   padding: 16px 32px;
@@ -144,7 +138,6 @@
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
@@ -205,7 +198,6 @@
   gap: 10px;
   margin-bottom: 32px;
   padding: 0;
-  /* background: #e5e7eb; */
   border-radius: 8px;
   overflow: hidden;
   padding:10px
@@ -507,7 +499,6 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   text-align: left;
 }
@@ -536,7 +527,6 @@
 
 .download-btn:disabled {
   opacity: 0.6;
-  /* cursor: not-allowed; */
 }
 
 /* Additional download button variants */
@@ -588,8 +578,12 @@
 }
 
 .classified-data-section {
-  background: linear-gradient(135deg, #fef3c7 0%, #fef9e7 100%);
-  border: 2px solid #f59e0b;
+  max-width: 1300px;
+  margin: 40px auto;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
 }
 
 /* Charges Download Section */
@@ -599,22 +593,20 @@
 }
 
 .download-all-charges-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
   color: white;
   border: none;
   padding: 16px 32px;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .download-all-charges-btn:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 16px #0d3f8f;
 }
 
 /* Grouped Charges Section */

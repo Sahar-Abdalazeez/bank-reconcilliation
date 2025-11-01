@@ -1,5 +1,4 @@
 .classification-card {
-  /* background: linear-gradient(135deg, #0d3f8f 0%, #3b82f6 100%);    width: 220px; */
   width: 200px;
   height: 220px;
   border-radius: 16px;
@@ -10,7 +9,6 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   border: 3px solid #0d3f8f;
   color: #0d3f8f;

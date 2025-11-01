@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { TableModal } from './TableModal';
-import './resultsTableStyles.css';
+import React, { useState } from "react";
+import { TableModal } from "./TableModal";
+import "./resultsTableStyles.css";
 
 interface ResultsDataTableProps {
   title: string;
   data: any[][];
   headers: string[];
-  variant: 'matched' | 'unmatched';
+  variant: "matched" | "unmatched";
   icon: string;
   showDownload?: boolean;
   downloadHandler?: () => void;
@@ -25,7 +25,7 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
   downloadHandler,
   downloadLabel = "Download",
   totalAmount,
-  showTotal = false
+  showTotal = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [previewLimit, setPreviewLimit] = useState(10);
@@ -38,16 +38,25 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
   return (
     <div className={`results-data-table ${variant}`}>
       <div className="results-table-header">
-        <div className="results-table-title" onClick={() => setIsExpanded(!isExpanded)}>
+        <div
+          className="results-table-title"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
           <span className="results-icon">{icon}</span>
+
           <h4>{title}</h4>
+          {showTotal && totalAmount !== undefined && (
+            <span className="results-total">
+              Total:{" "}
+              {totalAmount.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          )}
+
           <div className="results-meta">
             <span className="results-count">{data.length} rows</span>
-            {showTotal && totalAmount !== undefined && (
-              <span className="results-total">
-                Total: {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            )}
           </div>
         </div>
         <div className="results-table-actions">
@@ -73,13 +82,13 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
             </svg>
           </button>
           {showDownload && downloadHandler && (
-            <button 
+            <button
               className="results-download-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 downloadHandler();
               }}
-              title={downloadLabel}
+              title={""}
             >
               <svg
                 width="18"
@@ -95,17 +104,16 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              <span>Download</span>
             </button>
           )}
-          <button 
+          <button
             className="results-toggle-btn"
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
           >
-            {isExpanded ? '▼ Collapse' : '▶ View Data'}
+            {isExpanded ? "▼" : "▶"}
           </button>
         </div>
       </div>
@@ -124,8 +132,8 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
           <div className="results-table-controls">
             <label>
               Show rows:
-              <select 
-                value={previewLimit} 
+              <select
+                value={previewLimit}
                 onChange={(e) => setPreviewLimit(Number(e.target.value))}
               >
                 <option value={5}>5</option>
@@ -155,8 +163,10 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
                   <tr key={rowIndex}>
                     <td className="row-number">{rowIndex + 1}</td>
                     {row.map((cell, cellIndex) => (
-                      <td key={cellIndex} title={String(cell || '')}>
-                        {cell !== null && cell !== undefined ? String(cell) : '—'}
+                      <td key={cellIndex} title={String(cell || "")}>
+                        {cell !== null && cell !== undefined
+                          ? String(cell)
+                          : "—"}
                       </td>
                     ))}
                   </tr>
@@ -175,4 +185,3 @@ export const ResultsDataTable: React.FC<ResultsDataTableProps> = ({
     </div>
   );
 };
-

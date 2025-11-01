@@ -27,9 +27,9 @@
 .table-modal-container {
   background: white;
   border-radius: 16px;
-  width: 95%;
-  height: 90%;
-  max-width: 1300px;
+  width: 99%;
+  height: 95%;
+  max-width: 1500px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);

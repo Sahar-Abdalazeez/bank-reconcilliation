@@ -269,7 +269,6 @@
   font-weight: 500;
   color: #2d3748;
   background: white;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   min-width: 200px;
 }
@@ -303,7 +302,6 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(13, 63, 143, 0.3);
 }
@@ -365,7 +363,6 @@
   font-weight: 600;
   color: #4a5568;
   background: white;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   min-width: 140px;
 }
@@ -388,7 +385,6 @@
   border: none;
   border-radius: 6px;
   font-size: 16px;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
   min-width: 44px;
@@ -424,7 +420,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  /* cursor: pointer; */
   font-size: 15px;
   font-weight: 500;
   color: #2d3748;
@@ -433,7 +428,6 @@
 .tolerance-toggle input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  /* cursor: pointer; */
   accent-color: #0d3f8f;
 }
 
@@ -571,7 +565,6 @@ select:focus-visible {
 /* Loading State */
 .pattern-item.saving {
   opacity: 0.6;
-  /* pointer-events: none; */
 }
 
 /* Success Animation */
@@ -591,14 +584,11 @@ select:focus-visible {
 /* Disable state */
 button:disabled {
   opacity: 0.5;
-  /* cursor: not-allowed; */
-  /* pointer-events: none; */
 }
 
 /* Drag and Drop (Future Enhancement) */
 .pattern-item.dragging {
   opacity: 0.5;
-  /* cursor: move; */
 }
 
 .pattern-item.drag-over {

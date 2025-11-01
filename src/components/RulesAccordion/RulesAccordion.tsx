@@ -1,6 +1,5 @@
 import React from "react";
 import { Accordion, AccordionGroup } from "../core";
-import { classificationTypes } from "../../constants/classificationTypes";
 import "./styles.css";
 import { useFileUpload } from "../../contexts/FileUploadContext";
 
@@ -11,7 +10,6 @@ export const RulesAccordion = () => {
       title="📋 Classification Rules"
       description="View detailed patterns and rules for each classification type"
     >
-      {/* {Object.entries(classificationTypes).map(([key, type]) => ( */}
       { selectedClassificationType && <Accordion
           key={selectedClassificationType?.key}
           title={selectedClassificationType?.name}
@@ -72,12 +70,10 @@ export const RulesAccordion = () => {
             </div>
           </div>
         </Accordion>}
-      {/* ))} */}
     </AccordionGroup>
   );
 };
 
-// Helper function to assign variants
 const getVariant = (key: string) => {
   const variants: Record<
     string,

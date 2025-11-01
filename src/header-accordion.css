@@ -10,7 +10,6 @@
 }
 
 .header-container {
-  /* max-width: 1400px; */
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -30,8 +29,6 @@
 
 .logo-image {
   height: 100px;
-  /* width: 200px;
-  object-fit: contain; */
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -70,7 +67,6 @@
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.3s ease;
-  /* cursor: pointer; */
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -98,7 +94,6 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   padding: 0rem 1rem;
   width: 100%;
-  /* max-width: 1400px; */
   margin: 0 auto;
   text-align: center;
   border: none;
@@ -302,7 +297,6 @@
   border-radius: 12px;
   font-weight: 600;
   font-size: 0.9rem;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(13, 63, 143, 0.3);
   display: flex;
@@ -330,7 +324,6 @@
 }
 
 .upload-section {
-  /* flex: 1; */
   display: flex;
   flex-direction: column;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -354,7 +347,6 @@
 }
 
 .upload-section .data-table {
-  /* flex: 1; */
 }
 
 .section-title {
@@ -416,7 +408,6 @@
   border: 2px solid rgba(245, 158, 11, 0.3);
   border-radius: 20px;
   padding: 1.25rem 2rem;
-  /* cursor: pointer; */
   transition: all 0.4s ease;
   display: flex;
   align-items: center;
@@ -522,7 +513,6 @@
   border-radius: 8px;
   padding: 0.5rem 1rem;
   color: white;
-  /* cursor: pointer; */
   font-size: 0.85rem;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -610,7 +600,6 @@
   width: 32px;
   height: 32px;
   color: #ef4444;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -629,7 +618,6 @@
   border-radius: 8px;
   padding: 0.6rem 1rem;
   color: #22c55e;
-  /* cursor: pointer; */
   font-size: 0.85rem;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -687,7 +675,6 @@
   border-radius: 8px;
   padding: 0.5rem 1rem;
   color: #f59e0b;
-  /* cursor: pointer; */
   font-size: 0.85rem;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -830,7 +817,6 @@
   border: 2px solid #e2e8f0;
   border-radius: 16px;
   padding: 1rem 1.5rem;
-  /* cursor: pointer; */
   transition: all 0.3s ease;
   display: flex;
   align-items: center;

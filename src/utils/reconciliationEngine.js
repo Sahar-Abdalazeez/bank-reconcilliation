@@ -16,8 +16,11 @@ export const normalizeText = (text) => {
 };
 
 /**
- * Normalize check number with leading zeros
- * Preserves 9-digit check numbers as-is, pads shorter ones to 8 digits
+ * Normalize check number to 8 digits with leading zeros
+ * If check number is 9 digits AND leftmost digit is zero, remove it to make 8 digits
+ * All other lengths are padded to 8 digits
+ * 
+ * Example: "030000043" (9 digits, leftmost is 0) → "30000043" (8 digits)
  */
 export const normalizeCheckNumber = (checkNumber) => {
   if (!checkNumber) return '';
@@ -28,9 +31,10 @@ export const normalizeCheckNumber = (checkNumber) => {
   // If it's empty after cleaning, return empty
   if (!cleanNumber) return '';
   
-  // If it's 9 digits, keep it as 9 digits (don't remove any digit)
-  if (cleanNumber.length === 9) {
-    return cleanNumber;
+  // If it's 9 digits AND the leftmost digit is zero, remove it to make it 8 digits
+  // Example: "030000043" → "30000043"
+  if (cleanNumber.length === 9 && cleanNumber[0] === '0') {
+    return cleanNumber.substring(1); // Remove first character (leftmost zero)
   }
   
   // For all other lengths, pad with leading zeros to make it 8 digits
@@ -185,6 +189,20 @@ export const compareDatesWithTolerance = (companyDate, bankDate, toleranceDays) 
 };
 
 /**
+ * Clean and parse numeric value, removing commas and formatting
+ * Returns the cleaned numeric value, or null if not a valid number
+ */
+const cleanNumericValue = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  // Remove commas and other non-numeric characters (except decimal point and minus sign)
+  const cleaned = String(value).replace(/[^0-9.-]/g, '');
+  const num = parseFloat(cleaned);
+  return !isNaN(num) ? num : null;
+};
+
+/**
  * Check if a single matching column matches between two rows
  */
 export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeaders, bankHeaders, rootDateTolerance = 0, useRootDateTolerance = false) => {
@@ -206,27 +224,25 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
   switch (columnConfig.matchType) {
     case 'exact': {
       // Try to compare as numbers first (handles commas, decimals, etc.)
-      const n1 = parseFloat(String(companyValue).replace(/[^0-9.-]/g, ''));
-      const n2 = parseFloat(String(bankValue).replace(/[^0-9.-]/g, ''));
+      const n1 = cleanNumericValue(companyValue);
+      const n2 = cleanNumericValue(bankValue);
       
-      // If both are valid numbers, compare numerically
-      if (!isNaN(n1) && !isNaN(n2)) {
+      // If both are valid numbers, compare numerically (ignoring commas and formatting)
+      if (n1 !== null && n2 !== null) {
         return n1 === n2;
       }
       
       // Otherwise, compare as strings
-      return String(companyValue) === String(bankValue);
+      return String(companyValue).trim() === String(bankValue).trim();
     }
       
     case 'numeric': {
       // Remove commas and other non-numeric characters (except decimal point and minus sign)
-      const clean1 = String(companyValue || '').replace(/[^0-9.-]/g, '');
-      const clean2 = String(bankValue || '').replace(/[^0-9.-]/g, '');
+      const n1 = cleanNumericValue(companyValue);
+      const n2 = cleanNumericValue(bankValue);
       
-      const n1 = parseFloat(clean1);
-      const n2 = parseFloat(clean2);
-      
-      return !isNaN(n1) && !isNaN(n2) && n1 === n2;
+      // Both must be valid numbers and equal
+      return n1 !== null && n2 !== null && n1 === n2;
     }
       
     case 'date': {
@@ -268,29 +284,40 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
         columnConfig.bankColumn?.toLowerCase().includes('check') ||
         columnConfig.bankColumn?.toLowerCase().includes('doc');
       
-      // Normalize check numbers (preserves 9 digits, pads others to 8)
+      // Normalize check numbers (removes leading zero from 9-digit numbers to make 8 digits, pads shorter ones)
       if (isCheckNumberColumn) {
         const normalizedCompany = normalizeCheckNumber(companyValue);
         const normalizedBank = normalizeCheckNumber(bankValue);
         
-        // Debug logging for first few comparisons
-        if (Math.random() < 0.01) { // Log ~1% of comparisons to avoid spam
-        
-        }
-        
         return normalizedCompany === normalizedBank;
       }
       
-      // For non-check-number text fields, use normalize flag
+      // For text fields, first try numeric comparison if both values are numeric (ignoring commas)
+      const n1 = cleanNumericValue(companyValue);
+      const n2 = cleanNumericValue(bankValue);
+      if (n1 !== null && n2 !== null) {
+        // Both are numeric, compare as numbers (ignoring commas and formatting)
+        return n1 === n2;
+      }
+      
+      // For non-numeric text fields, use normalize flag
       if (columnConfig.normalize) {
         return normalizeText(companyValue) === normalizeText(bankValue);
       }
       
-      return String(companyValue) === String(bankValue);
+      return String(companyValue).trim() === String(bankValue).trim();
     }
       
-    default:
-      return String(companyValue) === String(bankValue);
+    default: {
+      // For unknown match types, try numeric comparison first (ignoring commas)
+      const n1 = cleanNumericValue(companyValue);
+      const n2 = cleanNumericValue(bankValue);
+      if (n1 !== null && n2 !== null) {
+        return n1 === n2;
+      }
+      // Otherwise, compare as strings
+      return String(companyValue).trim() === String(bankValue).trim();
+    }
   }
 };
 
@@ -624,7 +651,6 @@ const filterRowsByMatchingColumns = (classifiedRows, headers, matchingColumns, d
  * Classify company data based on patterns and filters
  */
 const classifyCompanyData = (companyData, companyHeaders, rules) => {
-  
   const classifiedCompanyRaw = classifyData(
     companyData,
     companyHeaders,
@@ -632,6 +658,11 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     rules.companySearchColumn,
     rules.companyFilters || null
   );
+  
+  
+  // Find the رقم الشيك المستخرج column index
+  const checkNumberHeaderIndex = companyHeaders?.findIndex(h => h === 'رقم الشيك المستخرج');
+  
     
   // Filter: Only keep rows that have values in ALL matching columns
   const classifiedCompanyFiltered = filterRowsByMatchingColumns(
@@ -639,8 +670,7 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     companyHeaders,
     rules.matchingColumns,
     'company'
-  );
-  
+  );  
   
   // Debug: Check column values
   debugColumnValues(classifiedCompanyFiltered, companyHeaders, rules.matchingColumns, 'company');
@@ -1028,7 +1058,9 @@ export const reconcileTransactions = (
   // ═══════════════════════════════════════════════════════════════════════
   
   // Step 1: Classify data
+
   const classifiedCompanyRaw = classifyCompanyData(companyData, companyHeaders, rules);
+  
   const classifiedBankRaw = classifyBankData(bankData, bankHeaders, rules);
   
   // Step 2: Match classified rows
@@ -1052,6 +1084,8 @@ export const reconcileTransactions = (
   );
   
   // Step 4: Return complete results
+
+  
   return {
     // Classified data (before filtering - for debugging)
     classifiedCompanyRaw,
