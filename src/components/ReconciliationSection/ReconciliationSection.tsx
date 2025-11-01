@@ -72,7 +72,6 @@ export const ReconciliationSection = () => {
         setReconciliationResults(results);
         setIsProcessing(false);
       } catch (err) {
-        console.error("Reconciliation error:", err);
         setError(`Reconciliation failed: ${err.message}`);
         setIsProcessing(false);
       }
@@ -460,50 +459,6 @@ export const ReconciliationSection = () => {
             )}
           </div>
 
-          {/* Detailed Breakdown
-          {!isBankOnly && (
-            <div className="breakdown-section">
-              <h3 className="breakdown-title">📋 Detailed Breakdown</h3>
-              <div className="breakdown-grid">
-                <div className="breakdown-card">
-                  <h4>🏢 Company Data</h4>
-                  <div className="breakdown-stats">
-                    <div className="breakdown-item">
-                      <span>Classified:</span>
-                      <strong>{reconciliationResults.stats.classifiedCompanyRows}</strong>
-                    </div>
-                    <div className="breakdown-item">
-                      <span>Matched:</span>
-                      <strong className="success">{reconciliationResults.matchedCompany.length}</strong>
-                    </div>
-                    <div className="breakdown-item">
-                      <span>Unmatched:</span>
-                      <strong className="error">{reconciliationResults.unmatchedCompany.length}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="breakdown-card">
-                  <h4>🏦 Bank Data</h4>
-                  <div className="breakdown-stats">
-                    <div className="breakdown-item">
-                      <span>Classified:</span>
-                      <strong>{reconciliationResults.stats.classifiedBankRows}</strong>
-                    </div>
-                    <div className="breakdown-item">
-                      <span>Matched:</span>
-                      <strong className="success">{reconciliationResults.matchedBank.length}</strong>
-                    </div>
-                    <div className="breakdown-item">
-                      <span>Unmatched:</span>
-                      <strong className="error">{reconciliationResults.unmatchedBank.length}</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )} */}
-
           {/* Unclassified Transactions */}
           {isUnclassified ? (
             <div className="unclassified-section">
@@ -761,17 +716,17 @@ export const ReconciliationSection = () => {
                     },
                     // Debug tables
                     ...(reconciliationResults.classifiedCompanyRaw && reconciliationResults.classifiedCompanyRaw.length > 0 ? [{
-                      id: 'debug-company-raw',
-                      label: 'Debug: Company Raw',
-                      icon: '📋',
+                      id: 'classified-company-raw',
+                      label: 'Classified Company',
+                      icon: '🏢',
                       data: reconciliationResults.classifiedCompanyRaw,
                       headers: companyHeaders,
                       variant: 'matched' as const,
                       showDownload: false,
                     }] : []),
                     ...(reconciliationResults.classifiedBankRaw && reconciliationResults.classifiedBankRaw.length > 0 ? [{
-                      id: 'debug-bank-raw',
-                      label: 'Debug: Bank Raw',
+                      id: 'classified-bank-raw',
+                      label: 'Classified Bank',
                       icon: '🏦',
                       data: reconciliationResults.classifiedBankRaw,
                       headers: bankHeaders,
@@ -786,8 +741,6 @@ export const ReconciliationSection = () => {
         </div>
       )}
 
-      {/* Debug Panel */}
-      <DebugPanel />
     </div>
   );
 };

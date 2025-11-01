@@ -13,7 +13,6 @@ export const ClassificationTypeSelector = () => {
       ...classificationTypes[key]
     };
     setSelectedClassificationType(selectedType);
-    console.log('Selected classification type:', key, selectedType);
   };
 
   return (

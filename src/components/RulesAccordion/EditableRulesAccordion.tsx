@@ -251,7 +251,6 @@ export const EditableRulesAccordion = () => {
 
   // Save rules (you can add API call here)
   const saveRules = () => {
-    console.log("Saving rules:", editableRules);
     setSaveStatus('saving');
     
     // Simulate save operation (replace with actual API call)

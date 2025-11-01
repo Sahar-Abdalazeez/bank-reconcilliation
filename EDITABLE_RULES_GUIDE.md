@@ -203,7 +203,6 @@ const {
 ### Save Function (Ready for API)
 ```javascript
 const saveRules = () => {
-  console.log("Saving rules:", editableRules);
   // TODO: Add API call here
   // Example:
   // await api.saveClassificationRules(editableRules);

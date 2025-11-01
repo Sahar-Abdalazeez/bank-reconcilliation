@@ -44,16 +44,21 @@
 }
 
 .card-icon {
-  font-size: 48px;
+  font-size: 60px;
   margin-bottom: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+.cleared-checks-icon {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
 
 .card-icon img {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
 }
 

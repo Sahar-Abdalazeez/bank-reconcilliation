@@ -2,7 +2,9 @@ import paymentCheckImage from '../assets/payment-check.png';
 import returnedCheckImage from '../assets/returned-check.png';
 import cashInflowImage from '../assets/money.png';
 import visaPaymentImage from '../assets/visa.png';
-
+import clearedCheckImg from '../assets/Check.png';
+import bankChargesImg from '../assets/bank-fees.png';
+import fundAccountImg from '../assets/transference.png';
 export const classificationTypes = {
   'checks-collection': {
     name: 'Checks Collection',
@@ -50,7 +52,7 @@ export const classificationTypes = {
   },
   'cleared-checks': {
     name: 'Cleared Checks',
-    icon: '💸',
+    icon: <img className="cleared-checks-icon" src={clearedCheckImg} alt="Returned Checks"/>,
     companyPatterns: [
       { pattern: 'سند صرف', matchType: 'startsWith' },
       { pattern: 'دفعة أدعاء', matchType: 'startsWith' }
@@ -168,7 +170,7 @@ export const classificationTypes = {
   },
   'charges': {
     name: 'Bank Charges',
-    icon: '💳',
+    icon: <img src={bankChargesImg} alt="Bank Charges"/>,
     isBankOnly: true,  // Special flag: Bank-only classification (no matching)
     companyPatterns: [],  // Not used for bank-only types
     bankPatterns: [
@@ -196,7 +198,7 @@ export const classificationTypes = {
 
   'fund-account': {
     name: 'Funding the  Account',
-    icon: '💳',
+    icon: <img src={fundAccountImg} alt="Funding the Account"/>,
     isBankOnly: true,  // Special flag: Bank-only classification (no matching)
     companyPatterns: [],  // Not used for bank-only types
     bankPatterns: [

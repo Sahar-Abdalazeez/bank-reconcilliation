@@ -37,12 +37,10 @@ export const downloadExcel = (data, headers, filename) => {
   try {
     // Validate inputs
     if (!data || !Array.isArray(data) || data.length === 0) {
-      console.warn('No data to export');
       return;
     }
     
     if (!headers || !Array.isArray(headers) || headers.length === 0) {
-      console.warn('No headers provided');
       return;
     }
     
@@ -56,11 +54,9 @@ export const downloadExcel = (data, headers, filename) => {
     // Download the file
     XLSX.writeFile(workbook, fullFilename);
     
-    console.log(`✅ Excel file downloaded: ${fullFilename}`);
     return true;
     
   } catch (error) {
-    console.error('❌ Error downloading Excel file:', error);
     return false;
   }
 };
@@ -145,11 +141,9 @@ export const downloadReconciliationSummary = (stats, results, filename) => {
     // Download the file
     XLSX.writeFile(workbook, fullFilename);
     
-    console.log(`✅ Reconciliation summary Excel file downloaded: ${fullFilename}`);
     return true;
     
   } catch (error) {
-    console.error('❌ Error downloading reconciliation summary:', error);
     return false;
   }
 };

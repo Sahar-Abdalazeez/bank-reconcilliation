@@ -71,11 +71,9 @@ export const processCompanyData = (data, headers) => {
   );
   
   if (byanIndex === -1) {
-    console.warn('⚠️ البيان column not found in company data');
     return { data, headers };
   }
   
-  console.log('✅ Found البيان column at index:', byanIndex);
   
   // Add new column headers
   const newHeaders = [
@@ -95,15 +93,6 @@ export const processCompanyData = (data, headers) => {
       checkNumber,
       date
     ];
-  });
-  
-  console.log(`✅ Extracted data from ${processedData.length} rows`);
-  console.log('Sample extractions:', {
-    row1: {
-      بيان: data[0]?.[byanIndex],
-      checkNumber: processedData[0]?.[headers.length],
-      date: processedData[0]?.[headers.length + 1]
-    }
   });
   
   return {
