@@ -1,6 +1,8 @@
 import React, { useCallback } from "react";
 import { useFileUpload } from "../../contexts/FileUploadContext";
 import "./UploadFilesSection.css";
+import CompanyIcon from "../../assets/company.png";
+import BankIcon from "../../assets/bank.png";
 
 export const UploadFilesSection = () => {
   const {
@@ -142,7 +144,12 @@ export const UploadFilesSection = () => {
             ) : (
               <>
                 <div className="upload-icon">
-                  {type === "company" ? "🏢" : "🏦"}
+                  <img 
+                    src={type === "company" ? CompanyIcon : BankIcon} 
+                    alt={type === "company" ? "Company" : "Bank"}
+                    width={90}
+                    height={90}
+                  />
                 </div>
                 <h3>
                   Upload {type === "company" ? "Company" : "Bank"} Excel File
@@ -174,7 +181,14 @@ export const UploadFilesSection = () => {
             {companyFileName && (
               <div className="file-item company-file">
                 <div className="file-info-content">
-                  <span className="file-icon">🏢</span>
+                  <span className="file-icon">
+                    <img 
+                      src={CompanyIcon} 
+                      alt="Company"
+                      width={30}
+                      height={30}
+                    />
+                  </span>
                   <div className="file-details">
                     <span className="file-label">Company Data</span>
                     <span className="file-name">{companyFileName}</span>
@@ -194,7 +208,14 @@ export const UploadFilesSection = () => {
             {bankFileName && (
               <div className="file-item bank-file">
                 <div className="file-info-content">
-                  <span className="file-icon">🏦</span>
+                  <span className="file-icon">
+                    <img 
+                      src={BankIcon} 
+                      alt="Bank"
+                      width={30}
+                      height={30}
+                    />
+                  </span>
                   <div className="file-details">
                     <span className="file-label">Bank Data</span>
                     <span className="file-name">{bankFileName}</span>

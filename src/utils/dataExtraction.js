@@ -183,7 +183,7 @@ export const processCompanyData = (data, headers) => {
   }
 
   // Process each row to extract data
-  const processedData = data.map((row, rowIndex) => {
+  const processedData = data.map((row) => {
     const byanValue = row[byanIndex];
 
     const checkNumber = extractCheckNumber(byanValue);
