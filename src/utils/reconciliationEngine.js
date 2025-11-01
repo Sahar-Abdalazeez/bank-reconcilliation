@@ -16,7 +16,8 @@ export const normalizeText = (text) => {
 };
 
 /**
- * Normalize check number to 8 digits with leading zeros
+ * Normalize check number with leading zeros
+ * Preserves 9-digit check numbers as-is, pads shorter ones to 8 digits
  */
 export const normalizeCheckNumber = (checkNumber) => {
   if (!checkNumber) return '';
@@ -27,7 +28,12 @@ export const normalizeCheckNumber = (checkNumber) => {
   // If it's empty after cleaning, return empty
   if (!cleanNumber) return '';
   
-  // Pad with leading zeros to make it 8 digits
+  // If it's 9 digits, keep it as 9 digits (don't remove any digit)
+  if (cleanNumber.length === 9) {
+    return cleanNumber;
+  }
+  
+  // For all other lengths, pad with leading zeros to make it 8 digits
   return cleanNumber.padStart(8, '0');
 };
 
@@ -65,41 +71,78 @@ export const checkPatternMatch = (text, pattern) => {
 };
 
 /**
- * Parse date from various formats
+ * Parse date from various formats (including Excel dates)
  */
 export const parseDate = (dateValue) => {
   if (!dateValue) return null;
   
   // If already a Date object
-  if (dateValue instanceof Date) return dateValue;
+  if (dateValue instanceof Date) {
+    if (!isNaN(dateValue.getTime())) {
+      return dateValue;
+    }
+    return null;
+  }
+  
+  // Handle Excel serial date numbers (if dateValue is a number)
+  if (typeof dateValue === 'number') {
+    // Excel dates start from January 1, 1900
+    // Excel incorrectly treats 1900 as a leap year, so we adjust
+    const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+    const date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
   
   // Try parsing string date
   const dateStr = String(dateValue).trim();
+  if (!dateStr) return null;
   
   // Try manual parsing first for more control
-  const parts = dateStr.split(/[/.+-]/);
+  const parts = dateStr.split(/[/.-\s]+/);
   if (parts.length === 3) {
-    const [part1, part2, part3] = parts.map(p => parseInt(p.trim()));
+    const part1 = parseInt(parts[0].trim(), 10);
+    const part2 = parseInt(parts[1].trim(), 10);
+    const part3 = parseInt(parts[2].trim(), 10);
     
-    // Check if it's a valid date in DD/MM/YYYY format
-    if (part1 >= 1 && part1 <= 31 && part2 >= 1 && part2 <= 12 && part3 >= 1900) {
-      const dateDDMM = new Date(part3, part2 - 1, part1);
-      if (!isNaN(dateDDMM.getTime()) && 
-          dateDDMM.getDate() === part1 && 
-          dateDDMM.getMonth() === part2 - 1 && 
-          dateDDMM.getFullYear() === part3) {
-        return dateDDMM;
+    if (isNaN(part1) || isNaN(part2) || isNaN(part3)) {
+      // Fall through to native parsing
+    } else {
+      // Check if it's a valid date in DD/MM/YYYY format
+      if (part1 >= 1 && part1 <= 31 && part2 >= 1 && part2 <= 12 && part3 >= 1900 && part3 <= 2100) {
+        const dateDDMM = new Date(part3, part2 - 1, part1);
+        if (!isNaN(dateDDMM.getTime()) && 
+            dateDDMM.getDate() === part1 && 
+            dateDDMM.getMonth() === part2 - 1 && 
+            dateDDMM.getFullYear() === part3) {
+          return dateDDMM;
+        }
+      }
+      
+      // Check if it's a valid date in MM/DD/YYYY format
+      if (part1 >= 1 && part1 <= 12 && part2 >= 1 && part2 <= 31 && part3 >= 1900 && part3 <= 2100) {
+        const dateMMDD = new Date(part3, part1 - 1, part2);
+        if (!isNaN(dateMMDD.getTime()) && 
+            dateMMDD.getMonth() === part1 - 1 && 
+            dateMMDD.getDate() === part2 && 
+            dateMMDD.getFullYear() === part3) {
+          return dateMMDD;
+        }
       }
     }
-    
-    // Check if it's a valid date in MM/DD/YYYY format
-    if (part1 >= 1 && part1 <= 12 && part2 >= 1 && part2 <= 31 && part3 >= 1900) {
-      const dateMMDD = new Date(part3, part1 - 1, part2);
-      if (!isNaN(dateMMDD.getTime()) && 
-          dateMMDD.getMonth() === part1 - 1 && 
-          dateMMDD.getDate() === part2 && 
-          dateMMDD.getFullYear() === part3) {
-        return dateMMDD;
+  }
+  
+  // Try parsing YYYY-MM-DD format (ISO format)
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    if (year >= 1900 && year <= 2100 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+        return date;
       }
     }
   }
@@ -107,7 +150,11 @@ export const parseDate = (dateValue) => {
   // Fallback to native Date parsing
   const date = new Date(dateStr);
   if (!isNaN(date.getTime())) {
-    return date;
+    // Validate the parsed date is reasonable (not way off)
+    const year = date.getFullYear();
+    if (year >= 1900 && year <= 2100) {
+      return date;
+    }
   }
   
   return null;
@@ -115,35 +162,26 @@ export const parseDate = (dateValue) => {
 
 /**
  * Compare dates with tolerance
- * For reconciliation: bankDate must be SAME or UP TO toleranceDays AFTER companyDate
- * @param {*} companyDate - Company date (earlier)
- * @param {*} bankDate - Bank date (same or later)
- * @param {*} toleranceDays - Maximum days bank can be after company (e.g., 4 days)
+ * For reconciliation: allows dates to differ by up to toleranceDays in either direction
+ * @param {*} companyDate - Company date
+ * @param {*} bankDate - Bank date
+ * @param {*} toleranceDays - Maximum days difference allowed (e.g., 4 days)
  */
 export const compareDatesWithTolerance = (companyDate, bankDate, toleranceDays) => {
   const d1 = parseDate(companyDate);
   const d2 = parseDate(bankDate);
   
-  if (!d1 || !d2) return false;
+  if (!d1 || !d2) {
+    // If parsing failed, return false
+    return false;
+  }
   
-  // Calculate difference: positive if bank is after company
-  const daysDiff = (d2 - d1) / (1000 * 60 * 60 * 24);
+  // Calculate difference in milliseconds, then convert to days
+  const diffMs = d2.getTime() - d1.getTime();
+  const daysDiff = Math.round(diffMs / (1000 * 60 * 60 * 24));
   
-  // Bank date must be same day (0) or up to toleranceDays AFTER company date
-  return daysDiff >= 0 && daysDiff <= toleranceDays;
-};
-
-/**
- * Compare numbers with tolerance
- */
-export const compareNumbersWithTolerance = (num1, num2, tolerance) => {
-  const n1 = parseFloat(num1);
-  const n2 = parseFloat(num2);
-  
-  if (isNaN(n1) || isNaN(n2)) return false;
-  
-  const diff = Math.abs(n1 - n2);
-  return diff <= tolerance;
+  // Allow dates to differ by up to toleranceDays in either direction (symmetric tolerance)
+  return Math.abs(daysDiff) <= toleranceDays;
 };
 
 /**
@@ -181,13 +219,27 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
     }
       
     case 'numeric': {
-      // Exact numeric match
-      const n1 = parseFloat(companyValue);
-      const n2 = parseFloat(bankValue);
+      // Remove commas and other non-numeric characters (except decimal point and minus sign)
+      const clean1 = String(companyValue || '').replace(/[^0-9.-]/g, '');
+      const clean2 = String(bankValue || '').replace(/[^0-9.-]/g, '');
+      
+      const n1 = parseFloat(clean1);
+      const n2 = parseFloat(clean2);
+      
       return !isNaN(n1) && !isNaN(n2) && n1 === n2;
     }
       
     case 'date': {
+      // Check for column-level date tolerance first
+      if (columnConfig.useDateTolerance && columnConfig.dateTolerance !== undefined) {
+        return compareDatesWithTolerance(
+          companyValue,
+          bankValue,
+          columnConfig.dateTolerance
+        );
+      }
+      
+      // Then check for root-level date tolerance
       if (useRootDateTolerance) {
         return compareDatesWithTolerance(
           companyValue,
@@ -195,10 +247,17 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
           rootDateTolerance
         );
       }
+      
       // Exact date match
       const d1 = parseDate(companyValue);
       const d2 = parseDate(bankValue);
-      return d1 && d2 && d1.getTime() === d2.getTime();
+      
+      if (!d1 || !d2) {
+        // If parsing failed, try to compare as strings (might be Excel serial dates or formatted strings)
+        return String(companyValue).trim() === String(bankValue).trim();
+      }
+      
+      return d1.getTime() === d2.getTime();
     }
       
     case 'text': {
@@ -209,7 +268,7 @@ export const checkColumnMatch = (companyRow, bankRow, columnConfig, companyHeade
         columnConfig.bankColumn?.toLowerCase().includes('check') ||
         columnConfig.bankColumn?.toLowerCase().includes('doc');
       
-      // ALWAYS normalize check numbers to 8 digits
+      // Normalize check numbers (preserves 9 digits, pads others to 8)
       if (isCheckNumberColumn) {
         const normalizedCompany = normalizeCheckNumber(companyValue);
         const normalizedBank = normalizeCheckNumber(bankValue);
@@ -300,13 +359,9 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
     
     // Check if any pattern matches
     let matches = false;
-    let matchedPattern = null;
     for (const pattern of patterns) {
       if (checkPatternMatch(searchValue, pattern)) {
         matches = true;
-        matchedPattern = typeof pattern === 'string' ? pattern : pattern.pattern;
-        if (classified.length < 3) {
-        }
         break;
       }
     }

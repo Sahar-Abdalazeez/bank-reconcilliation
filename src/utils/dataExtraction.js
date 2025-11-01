@@ -74,13 +74,20 @@ export const processCompanyData = (data, headers) => {
     return { data, headers };
   }
   
+  // Check if extracted columns already exist
+  const checkNumberHeader = 'رقم الشيك المستخرج';
+  const dateHeader = 'التاريخ المستخرج';
+  const hasCheckNumberColumn = headers.includes(checkNumberHeader);
+  const hasDateColumn = headers.includes(dateHeader);
   
-  // Add new column headers
-  const newHeaders = [
-    ...headers,
-    'رقم الشيك المستخرج',
-    'التاريخ المستخرج'
-  ];
+  // Add new column headers only if they don't already exist
+  const newHeaders = [...headers];
+  if (!hasCheckNumberColumn) {
+    newHeaders.push(checkNumberHeader);
+  }
+  if (!hasDateColumn) {
+    newHeaders.push(dateHeader);
+  }
   
   // Process each row to extract data
   const processedData = data.map(row => {
@@ -88,11 +95,17 @@ export const processCompanyData = (data, headers) => {
     const checkNumber = extractCheckNumber(byanValue);
     const date = extractDate(byanValue);
     
-    return [
-      ...row,
-      checkNumber,
-      date
-    ];
+    const newRow = [...row];
+    
+    // Only add extracted data if columns don't already exist
+    if (!hasCheckNumberColumn) {
+      newRow.push(checkNumber);
+    }
+    if (!hasDateColumn) {
+      newRow.push(date);
+    }
+    
+    return newRow;
   });
   
   return {
