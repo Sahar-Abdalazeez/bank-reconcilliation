@@ -295,10 +295,32 @@ export const ReconciliationSection = () => {
           {/* Statistics Dashboard */}
           <div className="stats-dashboard">
             <div className="stat-card total">
-              <div className="stat-icon">📊</div>
-              <div className="stat-content">
-                <div className="stat-label">Total Rows</div>
-                <div className="stat-value">
+              <div className="stat-value">
+                {reconciliationResults.stats.totalCompanyRows +
+                  reconciliationResults.stats.totalBankRows}
+              </div>
+              <div className="stat-label">Total Rows</div>
+              <div className="stat-circle">
+                <svg className="stat-circle-svg" viewBox="0 0 100 100">
+                  <circle
+                    className="stat-circle-bg"
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                  />
+                  <circle
+                    className="stat-circle-fill"
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset="0"
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                  />
+                </svg>
+                <div className="stat-circle-value">
                   {reconciliationResults.stats.totalCompanyRows +
                     reconciliationResults.stats.totalBankRows}
                 </div>
@@ -306,10 +328,32 @@ export const ReconciliationSection = () => {
             </div>
 
             <div className="stat-card classified">
-              <div className="stat-icon">{isBankOnly ? '💳' : '🏷️'}</div>
-              <div className="stat-content">
-                <div className="stat-label">{isBankOnly ? 'Found' : 'Classified'}</div>
-                <div className="stat-value">
+              <div className="stat-value">
+                {reconciliationResults.stats.classifiedCompanyRows +
+                  reconciliationResults.stats.classifiedBankRows}
+              </div>
+              <div className="stat-label">{isBankOnly ? 'Found' : 'Classified'}</div>
+              <div className="stat-circle">
+                <svg className="stat-circle-svg" viewBox="0 0 100 100">
+                  <circle
+                    className="stat-circle-bg"
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                  />
+                  <circle
+                    className="stat-circle-fill"
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - Math.min(100, ((reconciliationResults.stats.classifiedCompanyRows + reconciliationResults.stats.classifiedBankRows) / (reconciliationResults.stats.totalCompanyRows + reconciliationResults.stats.totalBankRows)) * 100) / 100)}`}
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                  />
+                </svg>
+                <div className="stat-circle-value">
                   {reconciliationResults.stats.classifiedCompanyRows +
                     reconciliationResults.stats.classifiedBankRows}
                 </div>
@@ -319,20 +363,63 @@ export const ReconciliationSection = () => {
             {!isBankOnly && (
               <>
                 <div className="stat-card matched">
-                  <div className="stat-icon">✅</div>
-                  <div className="stat-content">
-                    <div className="stat-label">Matched Pairs</div>
-                    <div className="stat-value">
+                  <div className="stat-value">
+                    {reconciliationResults.stats.matchedPairs}
+                  </div>
+                  <div className="stat-label">Matched Pairs</div>
+                  <div className="stat-circle">
+                    <svg className="stat-circle-svg" viewBox="0 0 100 100">
+                      <circle
+                        className="stat-circle-bg"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                      />
+                      <circle
+                        className="stat-circle-fill"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 45}`}
+                        strokeDashoffset={`${2 * Math.PI * 45 * (1 - Math.min(100, (reconciliationResults.stats.matchedPairs / (reconciliationResults.stats.classifiedCompanyRows + reconciliationResults.stats.classifiedBankRows)) * 100) / 100)}`}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                      />
+                    </svg>
+                    <div className="stat-circle-value">
                       {reconciliationResults.stats.matchedPairs}
                     </div>
                   </div>
                 </div>
 
                 <div className="stat-card unmatched">
-                  <div className="stat-icon">❌</div>
-                  <div className="stat-content">
-                    <div className="stat-label">Unmatched</div>
-                    <div className="stat-value">
+                  <div className="stat-value">
+                    {reconciliationResults.stats.unmatchedCompanyRows +
+                      reconciliationResults.stats.unmatchedBankRows}
+                  </div>
+                  <div className="stat-label">Unmatched</div>
+                  <div className="stat-circle">
+                    <svg className="stat-circle-svg" viewBox="0 0 100 100">
+                      <circle
+                        className="stat-circle-bg"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                      />
+                      <circle
+                        className="stat-circle-fill"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 45}`}
+                        strokeDashoffset={`${2 * Math.PI * 45 * (1 - Math.min(100, ((reconciliationResults.stats.unmatchedCompanyRows + reconciliationResults.stats.unmatchedBankRows) / (reconciliationResults.stats.classifiedCompanyRows + reconciliationResults.stats.classifiedBankRows)) * 100) / 100)}`}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                      />
+                    </svg>
+                    <div className="stat-circle-value">
                       {reconciliationResults.stats.unmatchedCompanyRows +
                         reconciliationResults.stats.unmatchedBankRows}
                     </div>
@@ -340,10 +427,31 @@ export const ReconciliationSection = () => {
                 </div>
 
                 <div className="stat-card rate">
-                  <div className="stat-icon">📈</div>
-                  <div className="stat-content">
-                    <div className="stat-label">Match Rate</div>
-                    <div className="stat-value">
+                  <div className="stat-value">
+                    {reconciliationResults.stats.matchRate}%
+                  </div>
+                  <div className="stat-label">Match Rate</div>
+                  <div className="stat-circle">
+                    <svg className="stat-circle-svg" viewBox="0 0 100 100">
+                      <circle
+                        className="stat-circle-bg"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                      />
+                      <circle
+                        className="stat-circle-fill"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 45}`}
+                        strokeDashoffset={`${2 * Math.PI * 45 * (1 - reconciliationResults.stats.matchRate / 100)}`}
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+                      />
+                    </svg>
+                    <div className="stat-circle-value">
                       {reconciliationResults.stats.matchRate}%
                     </div>
                   </div>

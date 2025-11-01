@@ -16,6 +16,7 @@ export const EditableRulesAccordion = () => {
   } = useFileUpload();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSectionVisible, setIsSectionVisible] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const sectionRef = useRef<HTMLDivElement>(null);
 
   // Initialize editable rules if not already set
@@ -251,9 +252,19 @@ export const EditableRulesAccordion = () => {
   // Save rules (you can add API call here)
   const saveRules = () => {
     console.log("Saving rules:", editableRules);
-    // Add your save logic here (e.g., API call, localStorage, etc.)
-    alert("Rules saved successfully!");
-    setIsEditMode(false);
+    setSaveStatus('saving');
+    
+    // Simulate save operation (replace with actual API call)
+    setTimeout(() => {
+      // Add your save logic here (e.g., API call, localStorage, etc.)
+      setSaveStatus('saved');
+      setIsEditMode(false);
+      
+      // Reset status after showing success message
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    }, 500);
   };
 
   return (
@@ -291,16 +302,29 @@ export const EditableRulesAccordion = () => {
           <>
             <div className="toolbar-btn-wrapper">
               <button 
-                className="toolbar-btn save-btn" 
+                className={`toolbar-btn save-btn ${saveStatus === 'saving' ? 'saving' : ''} ${saveStatus === 'saved' ? 'saved' : ''}`}
                 onClick={saveRules}
+                disabled={saveStatus === 'saving'}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                  <polyline points="7 3 7 8 15 8"></polyline>
-                </svg>
+                {saveStatus === 'saving' ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spinning">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="40" strokeLinecap="round" />
+                  </svg>
+                ) : saveStatus === 'saved' ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                )}
               </button>
-              <span className="toolbar-tooltip">Save All Changes</span>
+              <span className="toolbar-tooltip">
+                {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved Successfully!' : 'Save All Changes'}
+              </span>
             </div>
             <div className="toolbar-btn-wrapper">
               <button 

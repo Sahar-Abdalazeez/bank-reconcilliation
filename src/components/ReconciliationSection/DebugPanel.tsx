@@ -3,7 +3,7 @@ import { useFileUpload } from "../../contexts/FileUploadContext";
 import "./debugStyles.css";
 
 export const DebugPanel = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // Closed by default
   const {
     companyData,
     bankData,
@@ -20,17 +20,31 @@ export const DebugPanel = () => {
   }
 
   return (
-    <div className="debug-panel">
-      <button 
-        className="debug-toggle-btn"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? "🔍 Hide Debug Info" : "🔍 Show Debug Info"}
-      </button>
+    <div className="summary-panel">
+      <div className="summary-header">
+        <div className="summary-header-content">
+          <h3 className="summary-title">📊 Reconciliation Summary</h3>
+          <p className="summary-subtitle">Overview of data and configuration status</p>
+        </div>
+        <button 
+          className="summary-toggle-btn"
+          onClick={() => setIsOpen(!isOpen)}
+          title={isOpen ? "Collapse Summary" : "Expand Summary"}
+        >
+          {isOpen ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          )}
+        </button>
+      </div>
 
       {isOpen && (
-        <div className="debug-content">
-          <h3>🐛 Debug Information</h3>
+        <div className="summary-content">
 
           {/* Data Status */}
           <div className="debug-section">
@@ -38,19 +52,19 @@ export const DebugPanel = () => {
             <div className="debug-info-grid">
               <div className="debug-info-item">
                 <span>Company Rows:</span>
-                <strong>{companyData.length}</strong>
+                <strong>{companyData && Array.isArray(companyData) ? companyData.length : 0}</strong>
               </div>
               <div className="debug-info-item">
                 <span>Bank Rows:</span>
-                <strong>{bankData.length}</strong>
+                <strong>{bankData && Array.isArray(bankData) ? bankData.length : 0}</strong>
               </div>
               <div className="debug-info-item">
                 <span>Company Headers:</span>
-                <strong>{companyHeaders?.length || 0}</strong>
+                <strong>{companyHeaders && Array.isArray(companyHeaders) ? companyHeaders.length : 0}</strong>
               </div>
               <div className="debug-info-item">
                 <span>Bank Headers:</span>
-                <strong>{bankHeaders?.length || 0}</strong>
+                <strong>{bankHeaders && Array.isArray(bankHeaders) ? bankHeaders.length : 0}</strong>
               </div>
             </div>
           </div>
@@ -214,8 +228,13 @@ export const DebugPanel = () => {
             </div>
           </div>
 
-          <div className="debug-note">
-            💡 Tip: Open browser console (F12) to see detailed reconciliation logs
+          <div className="summary-note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Review this summary to verify your configuration before running reconciliation</span>
           </div>
         </div>
       )}

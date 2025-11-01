@@ -198,75 +198,220 @@
   font-family: 'Courier New', monospace;
 }
 
-/* Stats Dashboard */
+/* Stats Dashboard - Professional Clean Design */
 .stats-dashboard {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 10px;
   margin-bottom: 32px;
+  padding: 0;
+  /* background: #e5e7eb; */
+  border-radius: 8px;
+  overflow: hidden;
+  padding:10px
 }
 
 .stat-card {
-  padding: 24px;
-  border-radius: 12px;
+  padding: 12px ;
+  background: #f8fafc;
+  border: none;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-
-.stat-card.total {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-  border-color: #818cf8;
-}
-
-.stat-card.classified {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-color: #fbbf24;
-}
-
-.stat-card.matched {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border-color: #34d399;
-}
-
-.stat-card.unmatched {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border-color: #f87171;
-}
-
-.stat-card.rate {
-  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
-  border-color: #a78bfa;
-}
-
-.stat-icon {
-  font-size: 40px;
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #4a5568;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  background: #fafafa;
 }
 
 .stat-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #2d3748;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+  color: #111827;
+}
+
+.stat-card.total .stat-value {
+  color: #059669;
+}
+
+.stat-card.classified .stat-value {
+  color: #9333ea;
+}
+
+.stat-card.matched .stat-value {
+  color: #0891b2;
+}
+
+.stat-card.unmatched .stat-value {
+  color: #dc2626;
+}
+
+.stat-card.rate .stat-value {
+  color: #0891b2;
+}
+
+.stat-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.stat-card.total .stat-label {
+  color: #059669;
+}
+
+.stat-card.classified .stat-label {
+  color: #9333ea;
+}
+
+.stat-card.matched .stat-label {
+  color: #0891b2;
+}
+
+.stat-card.unmatched .stat-label {
+  color: #dc2626;
+}
+
+.stat-card.rate .stat-label {
+  color: #0891b2;
+}
+
+/* Circular Progress Visualization (Donut Chart) */
+.stat-circle {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 12px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.stat-circle-bg {
+  stroke: #f3f4f6;
+  stroke-width: 8;
+  fill: none;
+}
+
+.stat-circle-fill {
+  stroke-width: 8;
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card.total .stat-circle-fill {
+  stroke: #059669;
+}
+
+.stat-card.classified .stat-circle-fill {
+  stroke: #9333ea;
+}
+
+.stat-card.matched .stat-circle-fill {
+  stroke: #0891b2;
+}
+
+.stat-card.unmatched .stat-circle-fill {
+  stroke: #dc2626;
+}
+
+.stat-card.rate .stat-circle-fill {
+  stroke: #0891b2;
+}
+
+.stat-circle-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.stat-card.total .stat-circle-value {
+  color: #059669;
+}
+
+.stat-card.classified .stat-circle-value {
+  color: #9333ea;
+}
+
+.stat-card.matched .stat-circle-value {
+  color: #0891b2;
+}
+
+.stat-card.unmatched .stat-circle-value {
+  color: #dc2626;
+}
+
+.stat-card.rate .stat-circle-value {
+  color: #0891b2;
+}
+
+/* Dark mode support */
+[data-theme='dark'] .stats-dashboard {
+  background: #374151;
+}
+
+[data-theme='dark'] .stat-card {
+  background: #1f2937;
+}
+
+[data-theme='dark'] .stat-card:hover {
+  background: #374151;
+}
+
+[data-theme='dark'] .stat-value {
+  color: #f9fafb;
+}
+
+[data-theme='dark'] .stat-label {
+  color: #9ca3af;
+}
+
+[data-theme='dark'] .stat-circle-bg {
+  stroke: #374151;
+}
+
+[data-theme='dark'] .stat-circle-value {
+  color: #9ca3af;
+}
+
+[data-theme='dark'] .stat-card.total .stat-circle-value {
+  color: #10b981;
+}
+
+[data-theme='dark'] .stat-card.classified .stat-circle-value {
+  color: #a855f7;
+}
+
+[data-theme='dark'] .stat-card.matched .stat-circle-value {
+  color: #06b6d4;
+}
+
+[data-theme='dark'] .stat-card.unmatched .stat-circle-value {
+  color: #ef4444;
+}
+
+[data-theme='dark'] .stat-card.rate .stat-circle-value {
+  color: #06b6d4;
 }
 
 /* Breakdown Section */

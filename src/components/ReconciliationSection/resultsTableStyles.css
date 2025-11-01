@@ -124,25 +124,7 @@
   stroke: white !important;
   fill: none;
 }
-
-.results-toggle-btn {
-  background: #1f2937;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.results-toggle-btn:hover {
-  background: #111827;
-  transform: scale(1.05);
-}
-
-.results-download-btn {
+.results-download-btn, .results-toggle-btn {
   background: linear-gradient(135deg, #0d3f8f 0%, #1e40af 100%);
   color: white;
   border: none;
@@ -159,14 +141,34 @@
   border: 2px solid transparent;
 }
 
-.results-download-btn:hover {
+.results-download-btn svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.results-download-btn span {
+  line-height: 1;
+}
+
+.results-download-btn:hover , .results-toggle-btn:hover {
   background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(13, 63, 143, 0.4);
   border-color: rgba(255, 209, 26, 0.3);
 }
 
+.results-download-btn:hover svg {
+  transform: translateY(2px);
+  transition: transform 0.3s ease;
+}
+
 .results-download-btn:active {
+  transform: translateY(0);
+}
+
+.results-download-btn:active svg {
   transform: translateY(0);
 }
 
