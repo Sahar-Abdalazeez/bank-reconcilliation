@@ -570,13 +570,13 @@ export const ReconciliationSection = () => {
                       id: 'salary-company',
                       label: 'Company Salary Entries',
                       icon: '💰',
-                      data: reconciliationResults.classifiedCompany,
+                      data: (reconciliationResults.classifiedCompanyRaw || reconciliationResults.classifiedCompany || []),
                       headers: companyHeaders,
                       variant: 'matched',
                       showDownload: true,
                       downloadHandler: () => {
                         downloadExcel(
-                          reconciliationResults.classifiedCompany,
+                          reconciliationResults.classifiedCompanyRaw || reconciliationResults.classifiedCompany,
                           companyHeaders,
                           "Company_Salary_Entries"
                         );
@@ -589,7 +589,7 @@ export const ReconciliationSection = () => {
                       id: 'salary-bank',
                       label: 'Bank Salary Transfer',
                       icon: '💰',
-                      data: reconciliationResults.classifiedBank,
+                      data: (reconciliationResults.classifiedBankRaw || reconciliationResults.classifiedBank || []),
                       headers: bankHeaders,
                       variant: 'matched',
                       showDownload: true,

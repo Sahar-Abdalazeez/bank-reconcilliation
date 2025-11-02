@@ -373,12 +373,23 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
   
   const classified = [];
   let debugCount = 0;
+  let patternMatchCount = 0;
+  let filterRejectCount = 0;
+  
+  console.log('[classifyData] Starting classification with:', {
+    dataRows: data?.length,
+    searchColumn,
+    searchColumnIndex,
+    patternsCount: patterns?.length,
+    filtersCount: additionalFilters?.length || 0
+  });
   
   for (const row of data) {
     const searchValue = row[searchColumnIndex];
     
-    // Debug first 3 rows
-    if (debugCount < 3) {
+    // Debug first 5 rows
+    if (debugCount < 5) {
+      console.log(`[classifyData] Row ${debugCount + 1} searchValue:`, String(searchValue).substring(0, 100));
       debugCount++;
     }
     
@@ -389,6 +400,12 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
     for (const pattern of patterns) {
       if (checkPatternMatch(searchValue, pattern)) {
         matches = true;
+        patternMatchCount++;
+        
+        // Log first few matches
+        if (patternMatchCount <= 3) {
+          console.log(`[classifyData] Pattern matched! Pattern:`, pattern, `SearchValue:`, String(searchValue).substring(0, 100));
+        }
         break;
       }
     }
@@ -433,6 +450,11 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
               const digits = String(filterValue || '').replace(/[^0-9]/g, '');
               if (digits.length === 8) {
                 passesFilters = false;
+                filterRejectCount++;
+                // Log first few filter rejections
+                if (filterRejectCount <= 3) {
+                  console.log(`[classifyData] Filter rejected row (not8Digits): filterValue="${filterValue}", digits="${digits}", length=${digits.length}`);
+                }
               }
               break;
             }
@@ -446,10 +468,21 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
       
       if (passesFilters) {
         classified.push(row);
+      } else {
+        // Log first few filter rejections
+        if (filterRejectCount <= 3) {
+          console.log(`[classifyData] Row failed filter check`);
+        }
       }
     }
   }
   
+  console.log('[classifyData] Classification summary:', {
+    totalRows: data?.length,
+    patternMatches: patternMatchCount,
+    filterRejections: filterRejectCount,
+    finalClassified: classified.length
+  });
   
   return classified;
 };
@@ -651,19 +684,27 @@ const filterRowsByMatchingColumns = (classifiedRows, headers, matchingColumns, d
  * Classify company data based on patterns and filters
  */
 const classifyCompanyData = (companyData, companyHeaders, rules) => {
+  // Default to البيان if search column is not specified or empty
+  const searchColumn = (rules.companySearchColumn && rules.companySearchColumn.trim() !== '') 
+    ? rules.companySearchColumn 
+    : 'البيان';
+  
+  console.log('[classifyCompanyData] searchColumn:', searchColumn);
+  console.log('[classifyCompanyData] rules.companySearchColumn (original):', rules.companySearchColumn);
+  console.log('[classifyCompanyData] companyPatterns:', rules.companyPatterns);
+  console.log('[classifyCompanyData] companyFilters:', rules.companyFilters);
+  console.log('[classifyCompanyData] companyData rows:', companyData?.length);
+  
   const classifiedCompanyRaw = classifyData(
     companyData,
     companyHeaders,
     rules.companyPatterns,
-    rules.companySearchColumn,
+    searchColumn,
     rules.companyFilters || null
   );
   
+  console.log('[classifyCompanyData] After classifyData, classifiedCompanyRaw rows:', classifiedCompanyRaw?.length);
   
-  // Find the رقم الشيك المستخرج column index
-  const checkNumberHeaderIndex = companyHeaders?.findIndex(h => h === 'رقم الشيك المستخرج');
-  
-    
   // Filter: Only keep rows that have values in ALL matching columns
   const classifiedCompanyFiltered = filterRowsByMatchingColumns(
     classifiedCompanyRaw,
@@ -671,6 +712,8 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     rules.matchingColumns,
     'company'
   );  
+  
+  console.log('[classifyCompanyData] After filterRowsByMatchingColumns, classifiedCompanyFiltered rows:', classifiedCompanyFiltered?.length);
   
   // Debug: Check column values
   debugColumnValues(classifiedCompanyFiltered, companyHeaders, rules.matchingColumns, 'company');
@@ -682,12 +725,14 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
  * Classify bank data based on patterns and filters
  */
 const classifyBankData = (bankData, bankHeaders, rules) => {
+  // Default to NARRITIVE if search column is not specified
+  const searchColumn = rules.bankSearchColumn || 'NARRITIVE';
   
   const classifiedBankRaw = classifyData(
     bankData,
     bankHeaders,
     rules.bankPatterns,
-    rules.bankSearchColumn,
+    searchColumn,
     rules.bankFilters || null
   );
   
@@ -942,25 +987,109 @@ export const reconcileTransactions = (
   // ═══════════════════════════════════════════════════════════════════════
   // SPECIAL CASE: Sum Comparison (e.g., Salary - many company rows = one bank row)
   // ═══════════════════════════════════════════════════════════════════════
+  // Logic for Salary:
+  // 1. Find all rows where البيان column starts with "وذلك عن قيمة صافي رواتب"
+  // 2. Apply filters if any (e.g., exclude rows with 8-digit check numbers)
+  // 3. Show ALL classified rows in the table (classifiedCompanyRaw)
+  // 4. Calculate the sum of دائن column for all classified rows
+  // ═══════════════════════════════════════════════════════════════════════
   if (rules.isSumComparison) {
+    console.log('[reconcileTransactions] ========== Sum Comparison (Salary) mode ==========');
+    console.log('[reconcileTransactions] companyAmountColumn:', rules.companyAmountColumn);
+    console.log('[reconcileTransactions] bankAmountColumn:', rules.bankAmountColumn);
+    console.log('[reconcileTransactions] companyPatterns:', rules.companyPatterns);
+    console.log('[reconcileTransactions] companyFilters:', rules.companyFilters);
     
-    // Classify company and bank data
-    const classifiedCompanyRaw = classifyCompanyData(companyData, companyHeaders, rules);
-    const classifiedBankRaw = classifyBankData(bankData, bankHeaders, rules);
+    // Step 1: Find all rows where البيان starts with "وذلك عن قيمة صافي رواتب"
+    const companySearchColumn = (rules.companySearchColumn && rules.companySearchColumn.trim() !== '') 
+      ? rules.companySearchColumn 
+      : 'البيان';
     
-    // Calculate sum of company amount column
+    console.log('[reconcileTransactions] Step 1: Searching in column:', companySearchColumn);
+    console.log('[reconcileTransactions] Total company rows:', companyData?.length);
+    
+    // Find the البيان column index
+    const byanIndex = getColumnIndex(companyHeaders, companySearchColumn);
+    console.log('[reconcileTransactions] البيان column index:', byanIndex);
+    
+    if (byanIndex === -1) {
+      console.error('[reconcileTransactions] ERROR: البيان column not found! Available headers:', companyHeaders);
+    }
+    
+    // Classify company data: This finds all rows where البيان starts with "وذلك عن قيمة صافي رواتب"
+    // For salary, we want ALL rows matching the pattern, so we don't apply filters
+    // (The not8Digits filter would exclude salary rows that have 8-digit check numbers)
+    const classifiedCompanyRaw = classifyData(
+      companyData,
+      companyHeaders,
+      rules.companyPatterns,
+      companySearchColumn,
+      null  // Don't apply filters for salary - we want all matching rows
+    );
+    
+    console.log('[reconcileTransactions] Step 1 Result: Found', classifiedCompanyRaw?.length, 'rows matching pattern');
+    
+    // Log first few matched rows for debugging
+    if (classifiedCompanyRaw.length > 0 && byanIndex !== -1) {
+      console.log('[reconcileTransactions] Sample matched rows:');
+      classifiedCompanyRaw.slice(0, 3).forEach((row, idx) => {
+        console.log(`  Row ${idx + 1}:`, String(row[byanIndex]).substring(0, 80));
+      });
+    }
+    
+    // Classify bank data
+    const bankSearchColumn = (rules.bankSearchColumn && rules.bankSearchColumn.trim() !== '') 
+      ? rules.bankSearchColumn 
+      : 'NARRITIVE';
+    
+    const classifiedBankRaw = classifyData(
+      bankData,
+      bankHeaders,
+      rules.bankPatterns,
+      bankSearchColumn,
+      rules.bankFilters || null
+    );
+    
+    console.log('[reconcileTransactions] classifiedBankRaw rows:', classifiedBankRaw?.length);
+    
+    // Step 2: Calculate sum of دائن column for all classified rows
+    console.log('[reconcileTransactions] Step 2: Calculating sum of دائن column');
     let companyTotal = 0;
+    
     if (rules.companyAmountColumn) {
       const companyAmountIndex = getColumnIndex(companyHeaders, rules.companyAmountColumn);
+      console.log('[reconcileTransactions] دائن column index:', companyAmountIndex);
+      console.log('[reconcileTransactions] دائن column name:', rules.companyAmountColumn);
+      
       if (companyAmountIndex !== -1) {
-        classifiedCompanyRaw.forEach(row => {
-          const value = row[companyAmountIndex];
-          const numericValue = parseFloat(String(value || '0').replace(/[^0-9.-]/g, ''));
-          if (!isNaN(numericValue)) {
-            companyTotal += numericValue;
-          }
-        });
+        if (classifiedCompanyRaw.length === 0) {
+          console.warn('[reconcileTransactions] No classified rows found, cannot calculate sum');
+        } else {
+          classifiedCompanyRaw.forEach((row, index) => {
+            const value = row[companyAmountIndex];
+            // Remove commas and parse as number
+            const numericValue = parseFloat(String(value || '0').replace(/[^0-9.-]/g, ''));
+            
+            // Log first 5 values for debugging
+            if (index < 5) {
+              console.log(`[reconcileTransactions] Row ${index + 1}: دائن="${value}" → ${numericValue}`);
+            }
+            
+            if (!isNaN(numericValue)) {
+              companyTotal += numericValue;
+            } else {
+              console.warn(`[reconcileTransactions] Row ${index + 1}: Invalid numeric value:`, value);
+            }
+          });
+          console.log('[reconcileTransactions] ✅ Step 2 Complete: Total sum of دائن =', companyTotal);
+        }
+      } else {
+        console.error('[reconcileTransactions] ❌ ERROR: دائن column not found!');
+        console.error('[reconcileTransactions] Looking for:', rules.companyAmountColumn);
+        console.error('[reconcileTransactions] Available headers:', companyHeaders);
       }
+    } else {
+      console.error('[reconcileTransactions] ❌ ERROR: companyAmountColumn not configured!');
     }
     
     // Calculate sum of bank amount column
@@ -995,10 +1124,17 @@ export const reconcileTransactions = (
       totalsMatch: companyTotal === bankTotal
     };
     
+    console.log('[reconcileTransactions] ========== Summary ==========');
+    console.log('[reconcileTransactions] Classified Company Rows:', classifiedCompanyRaw.length);
+    console.log('[reconcileTransactions] Sum of دائن:', companyTotal);
+    console.log('[reconcileTransactions] Classified Bank Rows:', classifiedBankRaw.length);
+    console.log('[reconcileTransactions] Sum of DEBIT:', bankTotal);
+    console.log('[reconcileTransactions] ============================');
+    
     return {
-      classifiedCompanyRaw,
+      classifiedCompanyRaw,  // This will be shown in the table
       classifiedBankRaw,
-      classifiedCompany: classifiedCompanyRaw,
+      classifiedCompany: classifiedCompanyRaw,  // Also set this for compatibility
       classifiedBank: classifiedBankRaw,
       matchedCompany: [],
       matchedBank: [],

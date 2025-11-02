@@ -158,12 +158,8 @@ export const classificationTypes = {
     bankSearchColumn: '',
     companyAmountColumn: 'دائن',  // Column to sum in company data
     bankAmountColumn: 'DEBIT',     // Column to compare in bank data
-    companyFilters: [
-      { columnName: 'رقم الشيك المستخرج', condition: 'not8Digits' }
-    ],
-    bankFilters: [
-      { columnName: 'DOC-NUM', condition: 'not8Digits' }
-    ],
+    
+   
     matchingColumns: [],  // No row-by-row matching
     dateTolerance: 0,
     useDateTolerance: false

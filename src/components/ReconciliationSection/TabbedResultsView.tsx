@@ -27,8 +27,8 @@ export const TabbedResultsView: React.FC<TabbedResultsViewProps> = ({ tabs }) =>
     return firstTabWithData?.id || tabs[0]?.id || null;
   });
 
-  // Filter tabs that have data
-  const availableTabs = tabs.filter(tab => tab.data && tab.data.length > 0);
+  // Filter tabs that have data (allow empty arrays to show 0 rows)
+  const availableTabs = tabs.filter(tab => Array.isArray(tab.data));
 
   if (availableTabs.length === 0) {
     return null;
