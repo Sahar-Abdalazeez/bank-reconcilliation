@@ -376,22 +376,8 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
   let patternMatchCount = 0;
   let filterRejectCount = 0;
   
-  console.log('[classifyData] Starting classification with:', {
-    dataRows: data?.length,
-    searchColumn,
-    searchColumnIndex,
-    patternsCount: patterns?.length,
-    filtersCount: additionalFilters?.length || 0
-  });
-  
   for (const row of data) {
     const searchValue = row[searchColumnIndex];
-    
-    // Debug first 5 rows
-    if (debugCount < 5) {
-      console.log(`[classifyData] Row ${debugCount + 1} searchValue:`, String(searchValue).substring(0, 100));
-      debugCount++;
-    }
     
     if (!searchValue) continue;
     
@@ -401,11 +387,6 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
       if (checkPatternMatch(searchValue, pattern)) {
         matches = true;
         patternMatchCount++;
-        
-        // Log first few matches
-        if (patternMatchCount <= 3) {
-          console.log(`[classifyData] Pattern matched! Pattern:`, pattern, `SearchValue:`, String(searchValue).substring(0, 100));
-        }
         break;
       }
     }
@@ -451,10 +432,6 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
               if (digits.length === 8) {
                 passesFilters = false;
                 filterRejectCount++;
-                // Log first few filter rejections
-                if (filterRejectCount <= 3) {
-                  console.log(`[classifyData] Filter rejected row (not8Digits): filterValue="${filterValue}", digits="${digits}", length=${digits.length}`);
-                }
               }
               break;
             }
@@ -468,21 +445,9 @@ export const classifyData = (data, headers, patterns, searchColumn, additionalFi
       
       if (passesFilters) {
         classified.push(row);
-      } else {
-        // Log first few filter rejections
-        if (filterRejectCount <= 3) {
-          console.log(`[classifyData] Row failed filter check`);
-        }
-      }
+      } 
     }
   }
-  
-  console.log('[classifyData] Classification summary:', {
-    totalRows: data?.length,
-    patternMatches: patternMatchCount,
-    filterRejections: filterRejectCount,
-    finalClassified: classified.length
-  });
   
   return classified;
 };
@@ -688,13 +653,6 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
   const searchColumn = (rules.companySearchColumn && rules.companySearchColumn.trim() !== '') 
     ? rules.companySearchColumn 
     : 'البيان';
-  
-  console.log('[classifyCompanyData] searchColumn:', searchColumn);
-  console.log('[classifyCompanyData] rules.companySearchColumn (original):', rules.companySearchColumn);
-  console.log('[classifyCompanyData] companyPatterns:', rules.companyPatterns);
-  console.log('[classifyCompanyData] companyFilters:', rules.companyFilters);
-  console.log('[classifyCompanyData] companyData rows:', companyData?.length);
-  
   const classifiedCompanyRaw = classifyData(
     companyData,
     companyHeaders,
@@ -703,7 +661,6 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     rules.companyFilters || null
   );
   
-  console.log('[classifyCompanyData] After classifyData, classifiedCompanyRaw rows:', classifiedCompanyRaw?.length);
   
   // Filter: Only keep rows that have values in ALL matching columns
   const classifiedCompanyFiltered = filterRowsByMatchingColumns(
@@ -712,9 +669,7 @@ const classifyCompanyData = (companyData, companyHeaders, rules) => {
     rules.matchingColumns,
     'company'
   );  
-  
-  console.log('[classifyCompanyData] After filterRowsByMatchingColumns, classifiedCompanyFiltered rows:', classifiedCompanyFiltered?.length);
-  
+    
   // Debug: Check column values
   debugColumnValues(classifiedCompanyFiltered, companyHeaders, rules.matchingColumns, 'company');
   
@@ -994,27 +949,13 @@ export const reconcileTransactions = (
   // 4. Calculate the sum of دائن column for all classified rows
   // ═══════════════════════════════════════════════════════════════════════
   if (rules.isSumComparison) {
-    console.log('[reconcileTransactions] ========== Sum Comparison (Salary) mode ==========');
-    console.log('[reconcileTransactions] companyAmountColumn:', rules.companyAmountColumn);
-    console.log('[reconcileTransactions] bankAmountColumn:', rules.bankAmountColumn);
-    console.log('[reconcileTransactions] companyPatterns:', rules.companyPatterns);
-    console.log('[reconcileTransactions] companyFilters:', rules.companyFilters);
-    
     // Step 1: Find all rows where البيان starts with "وذلك عن قيمة صافي رواتب"
     const companySearchColumn = (rules.companySearchColumn && rules.companySearchColumn.trim() !== '') 
       ? rules.companySearchColumn 
       : 'البيان';
     
-    console.log('[reconcileTransactions] Step 1: Searching in column:', companySearchColumn);
-    console.log('[reconcileTransactions] Total company rows:', companyData?.length);
-    
     // Find the البيان column index
     const byanIndex = getColumnIndex(companyHeaders, companySearchColumn);
-    console.log('[reconcileTransactions] البيان column index:', byanIndex);
-    
-    if (byanIndex === -1) {
-      console.error('[reconcileTransactions] ERROR: البيان column not found! Available headers:', companyHeaders);
-    }
     
     // Classify company data: This finds all rows where البيان starts with "وذلك عن قيمة صافي رواتب"
     // For salary, we want ALL rows matching the pattern, so we don't apply filters
@@ -1026,16 +967,6 @@ export const reconcileTransactions = (
       companySearchColumn,
       null  // Don't apply filters for salary - we want all matching rows
     );
-    
-    console.log('[reconcileTransactions] Step 1 Result: Found', classifiedCompanyRaw?.length, 'rows matching pattern');
-    
-    // Log first few matched rows for debugging
-    if (classifiedCompanyRaw.length > 0 && byanIndex !== -1) {
-      console.log('[reconcileTransactions] Sample matched rows:');
-      classifiedCompanyRaw.slice(0, 3).forEach((row, idx) => {
-        console.log(`  Row ${idx + 1}:`, String(row[byanIndex]).substring(0, 80));
-      });
-    }
     
     // Classify bank data
     const bankSearchColumn = (rules.bankSearchColumn && rules.bankSearchColumn.trim() !== '') 
@@ -1050,17 +981,12 @@ export const reconcileTransactions = (
       rules.bankFilters || null
     );
     
-    console.log('[reconcileTransactions] classifiedBankRaw rows:', classifiedBankRaw?.length);
     
     // Step 2: Calculate sum of دائن column for all classified rows
-    console.log('[reconcileTransactions] Step 2: Calculating sum of دائن column');
     let companyTotal = 0;
     
     if (rules.companyAmountColumn) {
       const companyAmountIndex = getColumnIndex(companyHeaders, rules.companyAmountColumn);
-      console.log('[reconcileTransactions] دائن column index:', companyAmountIndex);
-      console.log('[reconcileTransactions] دائن column name:', rules.companyAmountColumn);
-      
       if (companyAmountIndex !== -1) {
         if (classifiedCompanyRaw.length === 0) {
           console.warn('[reconcileTransactions] No classified rows found, cannot calculate sum');
@@ -1070,22 +996,14 @@ export const reconcileTransactions = (
             // Remove commas and parse as number
             const numericValue = parseFloat(String(value || '0').replace(/[^0-9.-]/g, ''));
             
-            // Log first 5 values for debugging
-            if (index < 5) {
-              console.log(`[reconcileTransactions] Row ${index + 1}: دائن="${value}" → ${numericValue}`);
-            }
-            
             if (!isNaN(numericValue)) {
               companyTotal += numericValue;
             } else {
               console.warn(`[reconcileTransactions] Row ${index + 1}: Invalid numeric value:`, value);
             }
           });
-          console.log('[reconcileTransactions] ✅ Step 2 Complete: Total sum of دائن =', companyTotal);
         }
       } else {
-        console.error('[reconcileTransactions] ❌ ERROR: دائن column not found!');
-        console.error('[reconcileTransactions] Looking for:', rules.companyAmountColumn);
         console.error('[reconcileTransactions] Available headers:', companyHeaders);
       }
     } else {
@@ -1123,14 +1041,6 @@ export const reconcileTransactions = (
       totalsDifference: Math.abs(companyTotal - bankTotal),
       totalsMatch: companyTotal === bankTotal
     };
-    
-    console.log('[reconcileTransactions] ========== Summary ==========');
-    console.log('[reconcileTransactions] Classified Company Rows:', classifiedCompanyRaw.length);
-    console.log('[reconcileTransactions] Sum of دائن:', companyTotal);
-    console.log('[reconcileTransactions] Classified Bank Rows:', classifiedBankRaw.length);
-    console.log('[reconcileTransactions] Sum of DEBIT:', bankTotal);
-    console.log('[reconcileTransactions] ============================');
-    
     return {
       classifiedCompanyRaw,  // This will be shown in the table
       classifiedBankRaw,
