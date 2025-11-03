@@ -476,14 +476,18 @@ const findUnclassifiedRowsAdvanced = (data, headers, allOtherTypes, dataType, se
     return [];
   }
   
-  // If no search column provided, return all rows as unclassified
-  if (!searchColumn) {
-    return data;
-  }
+  // Support multiple company search columns (e.g., البيان, نوع المستند)
+  const companySearchColumns = dataType === 'company'
+    ? [searchColumn, 'نوع المستند'].filter(Boolean)
+    : [searchColumn];
   
-  // Get the search column index
-  const searchColumnIndex = getColumnIndex(headers, searchColumn);
-  if (searchColumnIndex === -1) {
+  // Resolve indices for all candidate columns
+  const searchColumnIndices = companySearchColumns
+    .map(col => ({ name: col, index: getColumnIndex(headers, col) }))
+    .filter(c => c.index !== -1);
+  
+  // If none of the columns exist, return all rows as unclassified
+  if (searchColumnIndices.length === 0) {
     return data;
   }
   
@@ -505,24 +509,26 @@ const findUnclassifiedRowsAdvanced = (data, headers, allOtherTypes, dataType, se
   
   // Check each row
   for (const row of data) {
-    const searchValue = row[searchColumnIndex];
+    // Gather values from all candidate columns
+    const values = searchColumnIndices.map(c => row[c.index]).filter(v => v !== null && v !== undefined && String(v).trim() !== '');
     
-    if (!searchValue) {
-      // Include rows with empty search values as unclassified
+    if (values.length === 0) {
+      // Include rows with empty search values across all columns as unclassified
       unclassified.push(row);
       continue;
     }
     
-    // Check if this row matches ANY pattern
+    // Check if this row matches ANY pattern in ANY candidate column
     let matchesAnyPattern = false;
-    for (const pattern of allPatterns) {
-      if (checkPatternMatch(searchValue, pattern)) {
-        matchesAnyPattern = true;
-        break;
+    outer: for (const val of values) {
+      for (const pattern of allPatterns) {
+        if (checkPatternMatch(val, pattern)) {
+          matchesAnyPattern = true;
+          break outer;
+        }
       }
     }
     
-    // If it doesn't match any pattern, it's unclassified
     if (!matchesAnyPattern) {
       unclassified.push(row);
     }
@@ -1109,6 +1115,23 @@ export const reconcileTransactions = (
   
   const classifiedBankRaw = classifyBankData(bankData, bankHeaders, rules);
   
+  // Optional grouping by pattern for consumers like 'fund-account'
+  const groupedCompanyByPattern = groupByPattern(
+    classifiedCompanyRaw,
+    companyHeaders,
+    rules.companyPatterns || [],
+    (rules.companySearchColumn && rules.companySearchColumn.trim() !== '') ? rules.companySearchColumn : 'البيان',
+    rules.companyAmountColumn || null
+  );
+  
+  const groupedBankByPattern = groupByPattern(
+    classifiedBankRaw,
+    bankHeaders,
+    rules.bankPatterns || [],
+    rules.bankSearchColumn || 'NARRITIVE',
+    rules.bankAmountColumn || null
+  );
+  
   // Step 2: Match classified rows
   const matchingResults = matchClassifiedRows(
     classifiedCompanyRaw,
@@ -1140,6 +1163,10 @@ export const reconcileTransactions = (
     // Classified data (after filtering)
     classifiedCompany: classifiedCompanyRaw,
     classifiedBank: classifiedBankRaw,
+    
+    // Grouped views by pattern (used by types like 'fund-account')
+    groupedCompanyByPattern,
+    groupedBankByPattern,
     
     // Matched data
     matchedCompany: matchingResults.matchedCompany,
@@ -1249,11 +1276,8 @@ export const validateReconciliationConfig = (rules) => {
     errors.push('No bank patterns configured');
   }
   
-  // Check matching columns
-  if (!rules.matchingColumns || rules.matchingColumns.length === 0) {
-    errors.push('No matching columns configured');
-  } else {
-    // Validate each matching column
+  // Matching columns are optional. If provided, validate them; if not, skip.
+  if (rules.matchingColumns && rules.matchingColumns.length > 0) {
     rules.matchingColumns.forEach((col, index) => {
       if (!col.companyColumn) {
         errors.push(`Matching column ${index + 1}: Company column not selected`);

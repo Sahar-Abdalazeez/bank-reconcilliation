@@ -195,16 +195,17 @@ export const classificationTypes = {
   'fund-account': {
     name: 'Funding the  Account',
     icon: <img src={fundAccountImg} alt="Funding the Account"/>,
-    isBankOnly: true,  // Special flag: Bank-only classification (no matching)
-    companyPatterns: [],  // Not used for bank-only types
+    isBankOnly: false,
+    // Allow company-side classification if patterns are provided via UI
+    companyPatterns: [],
     bankPatterns: [
       { pattern: 'BUYING/SELLING FOREIGN CURRENCY', matchType: 'includes' },
       { pattern: 'FUND TRANSFER - OWN ACCOUNTS', matchType: 'includes' },
     ],
-    companySearchColumn: '',  // Not used for bank-only types
-    bankSearchColumn: '',  // Will be configured by user
-    bankAmountColumn: 'DEBIT',  // Column to sum for total amounts
-    matchingColumns: [],  // No matching needed for bank-only types
+    companySearchColumn: '',  // Defaults to 'البيان' in engine when empty
+    bankSearchColumn: '',     // Defaults to 'NARRITIVE' in engine when empty
+    bankAmountColumn: 'DEBIT',
+    matchingColumns: [],
     dateTolerance: 0,
     useDateTolerance: false
   },

@@ -608,6 +608,57 @@ export const ReconciliationSection = () => {
                 />
               </div>
             </div>
+          ) : selectedClassificationType?.key === 'fund-account' ? (
+            <div className="classified-data-section">
+              <h3 className="classified-data-title">🏦 Funding the Account</h3>
+              <p className="classified-data-subtitle">
+                Rows grouped by their matched pattern for both company and bank
+              </p>
+              <div className="results-section">
+                <TabbedResultsView
+                  tabs={[
+                    ...(reconciliationResults.groupedCompanyByPattern?.map((group, index) => ({
+                      id: `fund-company-${index}`,
+                      label: `🏢 ${group.pattern}`,
+                      icon: '🏢',
+                      data: group.rows,
+                      headers: companyHeaders,
+                      variant: 'matched' as const,
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          group.rows,
+                          companyHeaders,
+                          `Funding_Company_${group.pattern.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_')}`
+                        );
+                      },
+                      downloadLabel: `Download (${group.rows.length})`,
+                      totalAmount: group.totalAmount,
+                      showTotal: true,
+                    })) || []),
+                    ...(reconciliationResults.groupedBankByPattern?.map((group, index) => ({
+                      id: `fund-bank-${index}`,
+                      label: `🏦 ${group.pattern}`,
+                      icon: '🏦',
+                      data: group.rows,
+                      headers: bankHeaders,
+                      variant: 'matched' as const,
+                      showDownload: true,
+                      downloadHandler: () => {
+                        downloadExcel(
+                          group.rows,
+                          bankHeaders,
+                          `Funding_Bank_${group.pattern.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_')}`
+                        );
+                      },
+                      downloadLabel: `Download (${group.rows.length})`,
+                      totalAmount: group.totalAmount,
+                      showTotal: true,
+                    })) || []),
+                  ]}
+                />
+              </div>
+            </div>
           ) : isBankOnly ? (
             <div className="classified-data-section">
               <h3 className="classified-data-title">💳 Classified Bank Charges</h3>
